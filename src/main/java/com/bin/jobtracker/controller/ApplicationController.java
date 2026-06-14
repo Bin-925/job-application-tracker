@@ -2,6 +2,7 @@ package com.bin.jobtracker.controller;
 
 import com.bin.jobtracker.dto.ApplicationCreateRequest;
 import com.bin.jobtracker.dto.ApplicationResponse;
+import com.bin.jobtracker.dto.ApplicationUpdateRequest;
 import com.bin.jobtracker.entity.Application;
 import com.bin.jobtracker.service.ApplicationService;
 import jakarta.validation.Valid;
@@ -35,5 +36,21 @@ public class ApplicationController {
     @GetMapping("/{id}")
     public ApplicationResponse get(@AuthenticationPrincipal Long memberId, @PathVariable Long id) {
         return ApplicationResponse.from(applicationService.getMyApplication(memberId, id));
+    }
+
+    @PutMapping("/{id}")
+    public ApplicationResponse update(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long id,
+            @RequestBody @Valid ApplicationUpdateRequest req) {
+        return ApplicationResponse.from(applicationService.update(memberId, id, req));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long id) {
+        applicationService.delete(memberId, id);
+        return ResponseEntity.noContent().build();   // 204 No Content
     }
 }

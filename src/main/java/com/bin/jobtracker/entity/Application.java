@@ -39,7 +39,6 @@ public class Application extends BaseEntity {
 
     private String externalJobId;
 
-    // 직접 등록용 생성자 (source = MANUAL 고정)
     public Application(Member member, String company, String position, ApplicationStatus status,
                        LocalDate appliedDate, LocalDate deadline, String link, String memo) {
         this.member = member;
@@ -51,5 +50,17 @@ public class Application extends BaseEntity {
         this.link = link;
         this.memo = memo;
         this.source = ApplicationSource.MANUAL;
+    }
+
+    // 수정용 (source/externalJobId는 건드리지 않음)
+    public void update(String company, String position, ApplicationStatus status,
+                       LocalDate appliedDate, LocalDate deadline, String link, String memo) {
+        this.company = company;
+        this.position = position;
+        this.status = status;
+        this.appliedDate = appliedDate;
+        this.deadline = deadline;
+        this.link = link;
+        this.memo = memo;
     }
 }
