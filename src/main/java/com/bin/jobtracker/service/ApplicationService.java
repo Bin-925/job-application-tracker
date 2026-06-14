@@ -3,6 +3,7 @@ package com.bin.jobtracker.service;
 import com.bin.jobtracker.dto.ApplicationCreateRequest;
 import com.bin.jobtracker.dto.ApplicationResponse;
 import com.bin.jobtracker.dto.ApplicationUpdateRequest;
+import com.bin.jobtracker.dto.StatusCount;
 import com.bin.jobtracker.entity.Application;
 import com.bin.jobtracker.entity.Member;
 import com.bin.jobtracker.enums.ApplicationStatus;
@@ -13,7 +14,9 @@ import com.bin.jobtracker.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -62,6 +65,18 @@ public class ApplicationService {
     public void delete(Long memberId, Long applicationId) {
         Application app = findOwned(memberId, applicationId);
         applicationRepository.delete(app);
+    }
+
+    // 상태별 통계: 모든 상태를 0으로 채운 뒤, DB 집계 결과로 덮어씀
+    public Map<ApplicationStatus, Long> getStats(Long memberId) {
+        Map<ApplicationStatus, Long> result = new EnumMap<>(ApplicationStatus.class);
+        for (ApplicationStatus s : ApplicationStatus.values()) {
+            result.put(s, 0L);                       // 0개인 상태도 결과에 포함
+        }
+        for (StatusCount sc : applicationRepository.countByStatus(memberId)) {
+            result.put(sc.status(), sc.count());     // 실제 개수로 덮어씀
+        }
+        return result;
     }
 
     private Application findOwned(Long memberId, Long applicationId) {
