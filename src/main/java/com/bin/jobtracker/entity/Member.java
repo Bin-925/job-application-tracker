@@ -1,6 +1,5 @@
-package com.bin.jobtracker.member;
+package com.bin.jobtracker.entity;
 
-import com.bin.jobtracker.global.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

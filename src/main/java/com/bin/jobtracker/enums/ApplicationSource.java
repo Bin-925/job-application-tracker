@@ -1,4 +1,4 @@
-package com.bin.jobtracker.application;
+package com.bin.jobtracker.enums;
 
 public enum ApplicationSource {
     MANUAL,    // 직접 입력

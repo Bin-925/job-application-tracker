@@ -1,7 +1,7 @@
-package com.bin.jobtracker.application;
+package com.bin.jobtracker.entity;
 
-import com.bin.jobtracker.global.BaseEntity;
-import com.bin.jobtracker.member.Member;
+import com.bin.jobtracker.enums.ApplicationSource;
+import com.bin.jobtracker.enums.ApplicationStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

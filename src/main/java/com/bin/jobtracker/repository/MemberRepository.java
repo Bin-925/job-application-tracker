@@ -1,5 +1,6 @@
-package com.bin.jobtracker.member;
+package com.bin.jobtracker.repository;
 
+import com.bin.jobtracker.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

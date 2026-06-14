@@ -1,4 +1,4 @@
-package com.bin.jobtracker.global;
+package com.bin.jobtracker.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

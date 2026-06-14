@@ -1,4 +1,4 @@
-package com.bin.jobtracker.application;
+package com.bin.jobtracker.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
