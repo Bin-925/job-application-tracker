@@ -52,7 +52,7 @@ public class Application extends BaseEntity {
         this.source = ApplicationSource.MANUAL;
     }
 
-    // 수정용 (source/externalJobId는 건드리지 않음)
+    // 전체 수정용
     public void update(String company, String position, ApplicationStatus status,
                        LocalDate appliedDate, LocalDate deadline, String link, String memo) {
         this.company = company;
@@ -62,5 +62,10 @@ public class Application extends BaseEntity {
         this.deadline = deadline;
         this.link = link;
         this.memo = memo;
+    }
+
+    // 상태만 변경
+    public void changeStatus(ApplicationStatus status) {
+        this.status = status;
     }
 }

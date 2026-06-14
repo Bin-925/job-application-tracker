@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import com.bin.jobtracker.dto.StatusUpdateRequest;
 
 @RestController
 @RequestMapping("/api/v1/applications")
@@ -52,5 +53,13 @@ public class ApplicationController {
             @PathVariable Long id) {
         applicationService.delete(memberId, id);
         return ResponseEntity.noContent().build();   // 204 No Content
+    }
+
+    @PatchMapping("/{id}/status")
+    public ApplicationResponse changeStatus(
+            @AuthenticationPrincipal Long memberId,
+            @PathVariable Long id,
+            @RequestBody @Valid StatusUpdateRequest req) {
+        return ApplicationResponse.from(applicationService.changeStatus(memberId, id, req.status()));
     }
 }

@@ -5,6 +5,7 @@ import com.bin.jobtracker.dto.ApplicationResponse;
 import com.bin.jobtracker.dto.ApplicationUpdateRequest;
 import com.bin.jobtracker.entity.Application;
 import com.bin.jobtracker.entity.Member;
+import com.bin.jobtracker.enums.ApplicationStatus;
 import com.bin.jobtracker.exception.ForbiddenException;
 import com.bin.jobtracker.exception.NotFoundException;
 import com.bin.jobtracker.repository.ApplicationRepository;
@@ -47,7 +48,14 @@ public class ApplicationService {
         Application app = findOwned(memberId, applicationId);
         app.update(req.company(), req.position(), req.status(),
                 req.appliedDate(), req.deadline(), req.link(), req.memo());
-        return app;   // 변경 감지(dirty checking)로 자동 저장 — save 호출 안 해도 됨
+        return app;
+    }
+
+    @Transactional
+    public Application changeStatus(Long memberId, Long applicationId, ApplicationStatus status) {
+        Application app = findOwned(memberId, applicationId);
+        app.changeStatus(status);
+        return app;
     }
 
     @Transactional
@@ -56,7 +64,6 @@ public class ApplicationService {
         applicationRepository.delete(app);
     }
 
-    // 본인 소유 확인 (없으면 404, 남의 것이면 403) — get/update/delete 공통 사용
     private Application findOwned(Long memberId, Long applicationId) {
         Application app = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new NotFoundException("지원 내역을 찾을 수 없습니다."));
