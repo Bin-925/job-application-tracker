@@ -23,7 +23,7 @@ public class Application extends BaseEntity {
     @Column(nullable = false)
     private String position;
 
-    @Enumerated(EnumType.STRING)   // ⭐ enum을 숫자 아닌 문자로 저장
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ApplicationStatus status;
 
@@ -37,5 +37,19 @@ public class Application extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private ApplicationSource source;
 
-    private String externalJobId;   // 사람인 공고번호 (중복방지)
+    private String externalJobId;
+
+    // 직접 등록용 생성자 (source = MANUAL 고정)
+    public Application(Member member, String company, String position, ApplicationStatus status,
+                       LocalDate appliedDate, LocalDate deadline, String link, String memo) {
+        this.member = member;
+        this.company = company;
+        this.position = position;
+        this.status = status;
+        this.appliedDate = appliedDate;
+        this.deadline = deadline;
+        this.link = link;
+        this.memo = memo;
+        this.source = ApplicationSource.MANUAL;
+    }
 }
