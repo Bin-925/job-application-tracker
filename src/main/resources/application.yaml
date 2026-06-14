@@ -13,3 +13,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
+jwt:
+  secret: "***REMOVED***"
+  expiration-ms: 3600000   # 1시간

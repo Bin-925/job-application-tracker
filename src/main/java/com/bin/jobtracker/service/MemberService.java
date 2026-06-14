@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MemberService {
+
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
 
@@ -19,8 +20,16 @@ public class MemberService {
         memberRepository.findByUsername(username).ifPresent(m -> {
             throw new IllegalArgumentException("이미 사용 중인 username입니다: " + username);
         });
-        // ⭐ 비밀번호를 암호화해서 저장
         Member member = new Member(username, passwordEncoder.encode(password), nickname);
         return memberRepository.save(member);
+    }
+
+    public Member login(String username, String password) {
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 회원입니다."));
+        if (!passwordEncoder.matches(password, member.getPassword())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+        return member;
     }
 }
