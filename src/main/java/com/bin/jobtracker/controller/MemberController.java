@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 @RestController
 @RequestMapping("/api/v1/members")
@@ -30,5 +31,10 @@ public class MemberController {
         Member member = memberService.login(req.username(), req.password());
         String token = jwtProvider.createToken(member.getId(), member.getUsername());
         return ResponseEntity.ok(new LoginResponse(member.getId(), member.getNickname(), token));
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<Long> me(@AuthenticationPrincipal Long memberId) {
+        return ResponseEntity.ok(memberId);   // 현재 로그인한 회원 id
     }
 }
