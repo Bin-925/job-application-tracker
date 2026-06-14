@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/applications")
@@ -20,9 +21,19 @@ public class ApplicationController {
 
     @PostMapping
     public ResponseEntity<ApplicationResponse> create(
-            @AuthenticationPrincipal Long memberId,            // ⭐ 토큰에서 자동으로 본인 id
+            @AuthenticationPrincipal Long memberId,
             @RequestBody @Valid ApplicationCreateRequest req) {
         Application app = applicationService.create(memberId, req);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApplicationResponse.from(app));
+    }
+
+    @GetMapping
+    public List<ApplicationResponse> list(@AuthenticationPrincipal Long memberId) {
+        return applicationService.getMyApplications(memberId);
+    }
+
+    @GetMapping("/{id}")
+    public ApplicationResponse get(@AuthenticationPrincipal Long memberId, @PathVariable Long id) {
+        return ApplicationResponse.from(applicationService.getMyApplication(memberId, id));
     }
 }
