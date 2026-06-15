@@ -35,3 +35,8 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# secrets & local tools
+application-secret.yml
+replacements.txt
+bfg-*.jar

@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:application-secret.yml
   datasource:
     url: jdbc:h2:mem:jobtracker
     username: sa
@@ -13,6 +15,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
 jwt:
-  secret: "***REMOVED***"
-  expiration-ms: 3600000   # 1시간
+  expiration-ms: 3600000
