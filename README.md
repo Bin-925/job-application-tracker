@@ -5,6 +5,7 @@
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1e3a8a,100:38bdf8&height=200&section=header&text=Job%20Application%20Tracker&fontSize=50&fontColor=ffffff&fontAlignY=35&desc=구직%20지원%20현황%20관리%20·%20Full-Stack&descSize=20&descAlignY=58&animation=fadeIn" width="100%" />
 
 ### 🗂️ 구직 지원 현황 트래커
+![CI](https://github.com/Bin-925/job-application-tracker/actions/workflows/ci.yml/badge.svg)
 
 지원한 채용공고를 등록하고 **진행 상태(지원 → 서류 → 면접 → 합격/탈락)**를 관리하는 풀스택 서비스입니다.
 **사람인 채용정보 API**로 실제 공고를 검색해 바로 트래커에 등록할 수 있습니다.
