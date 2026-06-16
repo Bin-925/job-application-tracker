@@ -101,17 +101,18 @@ export default function ApplicationEditPage() {
         if (el) el.showPicker?.()
     }
 
-    const fieldClass = "bg-gray-100 dark:bg-gray-700 rounded-xl"
-    const inputClass = `w-full ${fieldClass} px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500`
+    const fieldClass = "bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl"
+    const inputClass = `w-full ${fieldClass} px-4 py-3 text-sm text-gray-500 dark:text-gray-400 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`
+    const labelClass = "text-sm font-semibold text-gray-900 dark:text-white"
 
     if (fetching) return (
-        <div className="flex justify-center items-center h-screen text-gray-400 text-sm">
+        <div className="flex justify-center items-center h-screen text-gray-400 text-sm bg-white dark:bg-black">
             불러오는 중...
         </div>
     )
 
     return (
-        <div className="min-h-screen bg-white dark:bg-black">
+        <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
             <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600">
@@ -127,26 +128,22 @@ export default function ApplicationEditPage() {
             </div>
 
             <div className="px-4 py-5 flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        회사명 <span className="text-red-400">*</span>
-                    </label>
+                <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>회사명 <span className="text-red-400">*</span></label>
                     <input name="company" value={form.company} onChange={onChange}
                            placeholder="예: 토스" className={inputClass} />
                     {errors.company && <p className="text-xs text-red-500">{errors.company}</p>}
                 </div>
 
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        포지션 <span className="text-red-400">*</span>
-                    </label>
+                <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>포지션 <span className="text-red-400">*</span></label>
                     <input name="position" value={form.position} onChange={onChange}
                            placeholder="예: 백엔드 개발자" className={inputClass} />
                     {errors.position && <p className="text-xs text-red-500">{errors.position}</p>}
                 </div>
 
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">상태</label>
+                <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>상태</label>
                     <div className="relative">
                         <select name="status" value={form.status} onChange={onChange}
                                 className={`${inputClass} appearance-none pr-10 cursor-pointer`}>
@@ -154,7 +151,7 @@ export default function ApplicationEditPage() {
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
                         </select>
-                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
+                        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -162,10 +159,8 @@ export default function ApplicationEditPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                        지원일 <span className="text-red-400">*</span>
-                    </label>
+                <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>지원일 <span className="text-red-400">*</span></label>
                     <div className={`${fieldClass} flex items-center px-4 py-3 cursor-pointer`}
                          onClick={() => openPicker('appliedDate')}>
                         <input id="appliedDate" type="date" name="appliedDate"
@@ -175,8 +170,8 @@ export default function ApplicationEditPage() {
                     {errors.appliedDate && <p className="text-xs text-red-500">{errors.appliedDate}</p>}
                 </div>
 
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">마감일</label>
+                <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>마감일</label>
                     <div className={`${fieldClass} flex items-center px-4 py-3 cursor-pointer`}
                          onClick={() => openPicker('deadline')}>
                         <input id="deadline" type="date" name="deadline"
@@ -185,14 +180,14 @@ export default function ApplicationEditPage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">공고 링크</label>
+                <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>공고 링크</label>
                     <input name="link" value={form.link} onChange={onChange}
                            placeholder="https://..." className={inputClass} />
                 </div>
 
-                <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">메모</label>
+                <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>메모</label>
                     <textarea name="memo" value={form.memo} onChange={onChange}
                               placeholder="자유롭게 메모하세요" rows={3}
                               className={`${inputClass} resize-none`} />

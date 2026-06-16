@@ -30,14 +30,14 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col justify-center px-6 bg-white dark:bg-black">
+        <div className="min-h-screen flex flex-col justify-center px-6 bg-white dark:bg-black text-gray-900 dark:text-white">
             <div className="mb-10">
                 <h1 className="text-2xl font-semibold">안녕하세요 👋</h1>
-                <p className="text-sm text-gray-500 mt-1">계속하려면 로그인해주세요</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">계속하려면 로그인해주세요</p>
             </div>
             <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700">아이디</label>
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">아이디</label>
                     <input
                         name="username"
                         value={form.username}
@@ -48,7 +48,7 @@ export default function LoginPage() {
                     />
                 </div>
                 <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700">비밀번호</label>
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">비밀번호</label>
                     <input
                         name="password"
                         type="password"

@@ -9,6 +9,7 @@ export default function JoinPage() {
     const [errors, setErrors] = useState({})
     const [usernameStatus, setUsernameStatus] = useState(null)
     const [loading, setLoading] = useState(false)
+    const [success, setSuccess] = useState(false)
 
     const inputClass = "w-full bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
 
@@ -53,7 +54,7 @@ export default function JoinPage() {
         setLoading(true)
         try {
             await api.post('/members/join', form)
-            navigate('/login')
+            setSuccess(true)
         } catch (err) {
             setErrors({ general: err.response?.data?.message || '회원가입에 실패했습니다.' })
         } finally {
@@ -61,15 +62,36 @@ export default function JoinPage() {
         }
     }
 
+    // 가입 성공 화면
+    if (success) {
+        return (
+            <div className="min-h-screen flex flex-col justify-center items-center px-6 bg-white dark:bg-black text-gray-900 dark:text-white text-center">
+                <div className="w-20 h-20 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-4xl mb-6">
+                    🎉
+                </div>
+                <h1 className="text-2xl font-semibold mb-2">환영합니다, {form.nickname}님!</h1>
+                <p className="text-sm text-gray-400 mb-10">
+                    회원가입이 완료되었어요.<br />이제 로그인하고 지원 현황을 관리해보세요.
+                </p>
+                <button
+                    onClick={() => navigate('/login')}
+                    className="w-full max-w-xs bg-blue-500 text-white rounded-xl py-3 text-sm font-medium"
+                >
+                    로그인 하러 가기
+                </button>
+            </div>
+        )
+    }
+
     return (
-        <div className="min-h-screen flex flex-col justify-center px-6 bg-white dark:bg-black">
+        <div className="min-h-screen flex flex-col justify-center px-6 bg-white dark:bg-black text-gray-900 dark:text-white">
             <div className="mb-10">
                 <h1 className="text-2xl font-semibold">회원가입</h1>
                 <p className="text-sm text-gray-500 mt-1">지원 현황을 관리해보세요</p>
             </div>
             <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700">아이디</label>
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">아이디</label>
                     <div className="flex gap-2">
                         <input
                             name="username"
@@ -96,7 +118,7 @@ export default function JoinPage() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700">비밀번호</label>
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">비밀번호</label>
                     <input name="password" type="password" value={form.password}
                            onChange={onChange} onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
                            placeholder="영문+숫자 조합 8자 이상" className={inputClass} />
@@ -104,7 +126,7 @@ export default function JoinPage() {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <label className="text-sm font-semibold text-gray-700">닉네임</label>
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">닉네임</label>
                     <input name="nickname" value={form.nickname}
                            onChange={onChange} onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
                            placeholder="1~10자" className={inputClass} />
