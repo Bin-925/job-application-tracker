@@ -36,4 +36,29 @@ public class MemberService {
     public boolean existsByUsername(String username) {
         return memberRepository.existsByUsername(username);
     }
+
+    public Member findById(Long memberId) {
+        return memberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
+    }
+
+    @Transactional
+    public Member updateNickname(Long memberId, String nickname) {
+        Member member = findById(memberId);
+        member.updateNickname(nickname);
+        return member;
+    }
+
+    @Transactional
+    public void deleteMember(Long memberId) {
+        Member member = findById(memberId);
+        memberRepository.delete(member);
+    }
+
+    @Transactional
+    public Member updateAvatar(Long memberId, String avatar) {
+        Member member = findById(memberId);
+        member.updateAvatar(avatar);
+        return member;
+    }
 }

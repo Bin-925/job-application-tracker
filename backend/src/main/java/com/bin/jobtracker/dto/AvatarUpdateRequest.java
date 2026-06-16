@@ -1,4 +1,7 @@
 package com.bin.jobtracker.dto;
 
-public class AvatarUpdateRequest {
-}
+import jakarta.validation.constraints.NotBlank;
+
+public record AvatarUpdateRequest(
+        @NotBlank String avatar
+) {}

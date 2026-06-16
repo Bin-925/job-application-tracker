@@ -1,8 +1,6 @@
 package com.bin.jobtracker.controller;
 
-import com.bin.jobtracker.dto.JoinRequest;
-import com.bin.jobtracker.dto.LoginRequest;
-import com.bin.jobtracker.dto.LoginResponse;
+import com.bin.jobtracker.dto.*;
 import com.bin.jobtracker.entity.Member;
 import com.bin.jobtracker.security.JwtProvider;
 import com.bin.jobtracker.service.MemberService;
@@ -10,8 +8,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/members")
@@ -29,9 +27,9 @@ public class MemberController {
     @GetMapping("/check-username")
     public ResponseEntity<Void> checkUsername(@RequestParam String username) {
         if (memberService.existsByUsername(username)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build(); // 409 = 중복
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
-        return ResponseEntity.ok().build(); // 200 = 사용 가능
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/login")
@@ -42,7 +40,30 @@ public class MemberController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<Long> me(@AuthenticationPrincipal Long memberId) {
-        return ResponseEntity.ok(memberId);   // 현재 로그인한 회원 id
+    public ResponseEntity<MemberResponse> me(@AuthenticationPrincipal Long memberId) {
+        Member member = memberService.findById(memberId);
+        return ResponseEntity.ok(MemberResponse.from(member));
+    }
+
+    @PatchMapping("/me/nickname")
+    public ResponseEntity<MemberResponse> updateNickname(
+            @AuthenticationPrincipal Long memberId,
+            @RequestBody @Valid NicknameUpdateRequest req) {
+        Member member = memberService.updateNickname(memberId, req.nickname());
+        return ResponseEntity.ok(MemberResponse.from(member));
+    }
+
+    @PatchMapping("/me/avatar")
+    public ResponseEntity<MemberResponse> updateAvatar(
+            @AuthenticationPrincipal Long memberId,
+            @RequestBody @Valid AvatarUpdateRequest req) {
+        Member member = memberService.updateAvatar(memberId, req.avatar());
+        return ResponseEntity.ok(MemberResponse.from(member));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteMember(@AuthenticationPrincipal Long memberId) {
+        memberService.deleteMember(memberId);
+        return ResponseEntity.noContent().build();
     }
 }
