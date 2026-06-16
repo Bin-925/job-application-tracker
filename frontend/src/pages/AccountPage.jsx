@@ -86,7 +86,7 @@ export default function AccountPage() {
     const valueClass = "text-sm text-gray-500 dark:text-gray-400"
 
     return (
-        <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-black text-gray-900 dark:text-white">
             <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100 dark:border-gray-800">
                 <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

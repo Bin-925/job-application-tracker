@@ -46,7 +46,7 @@ export default function HomePage() {
     const inProgress = (stats.APPLIED || 0) + (stats.DOC_PASSED || 0) + (stats.INTERVIEW || 0)
 
     if (loading) return (
-        <div className="flex justify-center items-center h-screen text-gray-400 text-sm">
+        <div className="flex justify-center items-center h-full text-gray-400 text-sm">
             불러오는 중...
         </div>
     )
@@ -65,7 +65,7 @@ export default function HomePage() {
                     { label: '면접', value: stats.INTERVIEW || 0, color: 'text-amber-500' },
                     { label: '최종 합격', value: stats.ACCEPTED || 0, color: 'text-green-500' },
                 ].map((s) => (
-                    <div key={s.label} className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-4">
+                    <div key={s.label} className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4">
                         <p className="text-xs text-gray-500 mb-1">{s.label}</p>
                         <p className={`text-2xl font-semibold ${s.color || ''}`}>{s.value}</p>
                     </div>
@@ -85,38 +85,37 @@ export default function HomePage() {
             ) : (
                 <div className="flex flex-col gap-2">
                     {applications.map((app) => (
-                        <div key={app.id} className="bg-gray-100 dark:bg-gray-700 rounded-2xl p-4">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-sm font-semibold">{app.company}</span>
-                                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLE[app.status]}`}>
+                        <div
+                            key={app.id}
+                            onClick={() => navigate(`/calendar?date=${app.appliedDate || ''}`)}
+                            className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 cursor-pointer active:opacity-70"
+                        >
+                            <div className="flex items-start justify-between gap-2">
+                                <div className="min-w-0">
+                                    <p className="text-sm font-semibold truncate">{app.company}</p>
+                                    <p className="text-xs text-gray-400 mt-0.5 truncate">{app.position}</p>
+                                </div>
+                                <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLE[app.status]}`}>
                     {STATUS_LABEL[app.status]}
                   </span>
+                                    {app.deadline && (
+                                        <span className="text-xs text-red-400">⏰ 마감 {app.deadline}</span>
+                                    )}
                                 </div>
-                                <button
-                                    onClick={() => navigate(`/applications/${app.id}/edit`)}
-                                    className="text-gray-400 hover:text-gray-600 flex-shrink-0"
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
-                                    </svg>
-                                </button>
                             </div>
-                            <p className="text-xs text-gray-500 mb-2">{app.position}</p>
-                            {app.deadline && (
-                                <p className="text-xs text-gray-400">마감 {app.deadline}</p>
-                            )}
+
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs">
+                                <span className="text-blue-500">📨 지원 {app.appliedDate || '-'}</span>
+                                <span className="text-green-500">
+                  🎤 {app.interviewDate || '-'}
+                                    {app.interviewTime ? ` ${app.interviewTime.slice(0, 5)}` : ''}
+                </span>
+                            </div>
                         </div>
                     ))}
                 </div>
             )}
-
-            <button
-                onClick={() => navigate('/applications/new')}
-                className="fixed bottom-20 right-4 w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center text-2xl"
-            >
-                +
-            </button>
         </div>
     )
 }

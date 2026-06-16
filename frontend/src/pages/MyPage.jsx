@@ -54,7 +54,7 @@ export default function MyPage() {
     const avatarStyle = member ? getAvatarStyle(member.avatar) : { type: 'color', bg: 'bg-blue-100', text: 'text-blue-500' }
 
     return (
-        <div className="flex flex-col px-4 pt-6" style={{ minHeight: 'calc(100vh - 64px)' }}>
+        <div className="px-4 pt-6 pb-4">
             <p className="text-lg font-semibold mb-6">마이페이지</p>
 
             {/* 프로필 카드 */}
@@ -76,6 +76,7 @@ export default function MyPage() {
                 </svg>
             </div>
 
+            {/* 설정 */}
             <p className="text-xs text-gray-400 mb-2 ml-1">설정</p>
             <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 mb-6">
                 <div className="flex items-center justify-between py-4 border-b border-gray-200 dark:border-gray-700">
@@ -114,15 +115,15 @@ export default function MyPage() {
                 </div>
             </div>
 
-            <div className="mt-auto pb-4">
-                <button
-                    onClick={() => setShowLogoutModal(true)}
-                    className="w-full bg-gray-100 dark:bg-gray-800 rounded-2xl py-4 text-sm font-medium text-red-400"
-                >
-                    로그아웃
-                </button>
-            </div>
+            {/* 로그아웃 — 설정 카드 바로 아래 */}
+            <button
+                onClick={() => setShowLogoutModal(true)}
+                className="w-full bg-gray-100 dark:bg-gray-800 rounded-2xl py-4 text-sm font-medium text-red-400"
+            >
+                로그아웃
+            </button>
 
+            {/* 로그아웃 확인 팝업 */}
             {showLogoutModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-6"
                      onClick={() => setShowLogoutModal(false)}>

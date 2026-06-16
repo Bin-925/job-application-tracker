@@ -20,6 +20,8 @@ export default function ApplicationEditPage() {
         status: 'APPLIED',
         appliedDate: '',
         deadline: '',
+        interviewDate: '',
+        interviewTime: '',
         link: '',
         memo: '',
     })
@@ -38,6 +40,8 @@ export default function ApplicationEditPage() {
                     status: d.status || 'APPLIED',
                     appliedDate: d.appliedDate || '',
                     deadline: d.deadline || '',
+                    interviewDate: d.interviewDate || '',
+                    interviewTime: d.interviewTime || '',
                     link: d.link || '',
                     memo: d.memo || '',
                 })
@@ -75,6 +79,8 @@ export default function ApplicationEditPage() {
                 status: form.status,
                 appliedDate: form.appliedDate,
                 deadline: form.deadline || null,
+                interviewDate: form.interviewDate || null,
+                interviewTime: form.interviewTime || null,
                 link: form.link || null,
                 memo: form.memo || null,
             })
@@ -102,17 +108,17 @@ export default function ApplicationEditPage() {
     }
 
     const fieldClass = "bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl"
-    const inputClass = `w-full ${fieldClass} px-4 py-3 text-sm text-gray-500 dark:text-gray-400 outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`
+    const inputClass = `w-full ${fieldClass} px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500`
     const labelClass = "text-sm font-semibold text-gray-900 dark:text-white"
 
     if (fetching) return (
-        <div className="flex justify-center items-center h-screen text-gray-400 text-sm bg-white dark:bg-black">
+        <div className="flex justify-center items-center h-full text-gray-400 text-sm">
             불러오는 중...
         </div>
     )
 
     return (
-        <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-black text-gray-900 dark:text-white">
             <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800">
                 <div className="flex items-center gap-3">
                     <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-600">
@@ -122,9 +128,7 @@ export default function ApplicationEditPage() {
                     </button>
                     <span className="text-base font-semibold">지원 수정</span>
                 </div>
-                <button onClick={onDelete} className="text-red-400 text-sm font-medium">
-                    삭제
-                </button>
+                <button onClick={onDelete} className="text-red-400 text-sm font-medium">삭제</button>
             </div>
 
             <div className="px-4 py-5 flex flex-col gap-4">
@@ -176,6 +180,27 @@ export default function ApplicationEditPage() {
                          onClick={() => openPicker('deadline')}>
                         <input id="deadline" type="date" name="deadline"
                                value={form.deadline} onChange={onChange}
+                               className="flex-1 bg-transparent text-sm outline-none cursor-pointer" />
+                    </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>면접일</label>
+                    <div className={`${fieldClass} flex items-center px-4 py-3 cursor-pointer`}
+                         onClick={() => openPicker('interviewDate')}>
+                        <input id="interviewDate" type="date" name="interviewDate"
+                               value={form.interviewDate} onChange={onChange}
+                               className="flex-1 bg-transparent text-sm outline-none cursor-pointer" />
+                    </div>
+                </div>
+
+                {/* 면접 시간 */}
+                <div className="flex flex-col gap-1.5">
+                    <label className={labelClass}>면접 시간</label>
+                    <div className={`${fieldClass} flex items-center px-4 py-3 cursor-pointer`}
+                         onClick={() => openPicker('interviewTime')}>
+                        <input id="interviewTime" type="time" name="interviewTime"
+                               value={form.interviewTime} onChange={onChange}
                                className="flex-1 bg-transparent text-sm outline-none cursor-pointer" />
                     </div>
                 </div>
