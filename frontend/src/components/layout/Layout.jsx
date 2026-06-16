@@ -3,7 +3,7 @@ import TabBar from './TabBar'
 
 export default function Layout() {
     return (
-        <div className="flex flex-col min-h-screen max-w-sm mx-auto">
+        <div className="flex flex-col min-h-screen max-w-sm mx-auto bg-white dark:bg-black text-gray-900 dark:text-white">
             <main className="flex-1 pb-16">
                 <Outlet />
             </main>
