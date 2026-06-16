@@ -65,7 +65,7 @@ export default function JoinPage() {
     // 가입 성공 화면
     if (success) {
         return (
-            <div className="min-h-screen flex flex-col justify-center items-center px-6 bg-white dark:bg-black text-gray-900 dark:text-white text-center">
+            <div className="h-full flex flex-col justify-center items-center px-6 bg-white dark:bg-black text-gray-900 dark:text-white text-center">
                 <div className="w-20 h-20 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-4xl mb-6">
                     🎉
                 </div>
@@ -84,7 +84,7 @@ export default function JoinPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col justify-center px-6 bg-white dark:bg-black text-gray-900 dark:text-white">
+        <div className="h-full flex flex-col justify-center px-6 bg-white dark:bg-black text-gray-900 dark:text-white">
             <div className="mb-10">
                 <h1 className="text-2xl font-semibold">회원가입</h1>
                 <p className="text-sm text-gray-500 mt-1">지원 현황을 관리해보세요</p>

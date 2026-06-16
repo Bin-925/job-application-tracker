@@ -16,7 +16,7 @@ import AccountPage from './pages/AccountPage'
 function Framed({ children }) {
     return (
         <PhoneFrame>
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto h-full">
                 {children}
             </div>
         </PhoneFrame>

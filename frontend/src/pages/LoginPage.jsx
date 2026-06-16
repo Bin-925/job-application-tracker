@@ -30,7 +30,7 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen flex flex-col justify-center px-6 bg-white dark:bg-black text-gray-900 dark:text-white">
+        <div className="h-full flex flex-col justify-center px-6 bg-white dark:bg-black text-gray-900 dark:text-white">
             <div className="mb-10">
                 <h1 className="text-2xl font-semibold">안녕하세요 👋</h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">계속하려면 로그인해주세요</p>
