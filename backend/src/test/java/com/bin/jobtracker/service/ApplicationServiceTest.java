@@ -34,17 +34,15 @@ class ApplicationServiceTest {
     @Mock MemberRepository memberRepository;
     @InjectMocks ApplicationService applicationService;
 
-    // 헬퍼: 회원 (id를 강제로 주입 — 아래 설명 참고)
     private Member memberWithId(Long id) {
         Member member = new Member("user" + id, "pw", "닉" + id);
         ReflectionTestUtils.setField(member, "id", id);
         return member;
     }
 
-    // 헬퍼: 특정 회원이 소유한 지원 1건
     private Application applicationOf(Member owner) {
         return new Application(owner, "토스", "백엔드", ApplicationStatus.APPLIED,
-                LocalDate.now(), LocalDate.now().plusDays(7), "https://toss.im", "메모");
+                LocalDate.now(), LocalDate.now().plusDays(7), null, null, "https://toss.im", "메모");
     }
 
     @Test
@@ -53,10 +51,10 @@ class ApplicationServiceTest {
         Member member = memberWithId(1L);
         given(memberRepository.findById(1L)).willReturn(Optional.of(member));
         given(applicationRepository.save(any(Application.class)))
-                .willAnswer(inv -> inv.getArgument(0)); // 저장한 객체 그대로 반환
+                .willAnswer(inv -> inv.getArgument(0));
         ApplicationCreateRequest req = new ApplicationCreateRequest(
                 "토스", "백엔드", ApplicationStatus.APPLIED,
-                LocalDate.now(), LocalDate.now().plusDays(7), "https://toss.im", "메모");
+                LocalDate.now(), LocalDate.now().plusDays(7), null, null, "https://toss.im", "메모");
 
         Application result = applicationService.create(1L, req);
 
@@ -71,7 +69,7 @@ class ApplicationServiceTest {
         given(memberRepository.findById(99L)).willReturn(Optional.empty());
         ApplicationCreateRequest req = new ApplicationCreateRequest(
                 "토스", "백엔드", ApplicationStatus.APPLIED,
-                LocalDate.now(), null, null, null);
+                LocalDate.now(), null, null, null, null, null);
 
         assertThatThrownBy(() -> applicationService.create(99L, req))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -102,11 +100,10 @@ class ApplicationServiceTest {
     @Test
     @DisplayName("★ 내 지원 조회 - 타인 것이면 403(Forbidden)")
     void getMyApplication_forbidden() {
-        Member owner = memberWithId(1L);          // 지원의 주인 = 회원 1
+        Member owner = memberWithId(1L);
         Application app = applicationOf(owner);
         given(applicationRepository.findById(10L)).willReturn(Optional.of(app));
 
-        // 회원 2가 회원 1의 지원에 접근 시도
         assertThatThrownBy(() -> applicationService.getMyApplication(2L, 10L))
                 .isInstanceOf(ForbiddenException.class);
     }
@@ -120,7 +117,7 @@ class ApplicationServiceTest {
 
         assertThatThrownBy(() -> applicationService.delete(2L, 10L))
                 .isInstanceOf(ForbiddenException.class);
-        then(applicationRepository).should(never()).delete(any()); // 삭제 차단 검증
+        then(applicationRepository).should(never()).delete(any());
     }
 
     @Test
@@ -145,9 +142,9 @@ class ApplicationServiceTest {
 
         Map<ApplicationStatus, Long> stats = applicationService.getStats(1L);
 
-        assertThat(stats).hasSize(ApplicationStatus.values().length); // 모든 상태 키 존재
+        assertThat(stats).hasSize(ApplicationStatus.values().length);
         assertThat(stats.get(ApplicationStatus.APPLIED)).isEqualTo(2L);
         assertThat(stats.get(ApplicationStatus.INTERVIEW)).isEqualTo(1L);
-        assertThat(stats.get(ApplicationStatus.REJECTED)).isEqualTo(0L);  // 집계 안 된 건 0
+        assertThat(stats.get(ApplicationStatus.REJECTED)).isEqualTo(0L);
     }
 }

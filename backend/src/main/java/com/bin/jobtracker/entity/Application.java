@@ -7,6 +7,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Entity
 @Getter
@@ -29,6 +30,8 @@ public class Application extends BaseEntity {
 
     private LocalDate appliedDate;
     private LocalDate deadline;
+    private LocalDate interviewDate;
+    private LocalTime interviewTime;   // ← 추가
     private String link;
 
     @Column(length = 1000)
@@ -40,31 +43,35 @@ public class Application extends BaseEntity {
     private String externalJobId;
 
     public Application(Member member, String company, String position, ApplicationStatus status,
-                       LocalDate appliedDate, LocalDate deadline, String link, String memo) {
+                       LocalDate appliedDate, LocalDate deadline, LocalDate interviewDate,
+                       LocalTime interviewTime, String link, String memo) {
         this.member = member;
         this.company = company;
         this.position = position;
         this.status = status;
         this.appliedDate = appliedDate;
         this.deadline = deadline;
+        this.interviewDate = interviewDate;
+        this.interviewTime = interviewTime;   // ← 추가
         this.link = link;
         this.memo = memo;
         this.source = ApplicationSource.MANUAL;
     }
 
-    // 전체 수정용
     public void update(String company, String position, ApplicationStatus status,
-                       LocalDate appliedDate, LocalDate deadline, String link, String memo) {
+                       LocalDate appliedDate, LocalDate deadline, LocalDate interviewDate,
+                       LocalTime interviewTime, String link, String memo) {
         this.company = company;
         this.position = position;
         this.status = status;
         this.appliedDate = appliedDate;
         this.deadline = deadline;
+        this.interviewDate = interviewDate;
+        this.interviewTime = interviewTime;   // ← 추가
         this.link = link;
         this.memo = memo;
     }
 
-    // 상태만 변경
     public void changeStatus(ApplicationStatus status) {
         this.status = status;
     }

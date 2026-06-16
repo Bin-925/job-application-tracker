@@ -27,7 +27,6 @@ class ApiIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
 
-    // 테스트용 비밀번호: 영문+숫자 8자 이상 패턴 만족
     private static final String TEST_PW = "Test1234";
 
     private void join(String username) throws Exception {
@@ -51,7 +50,7 @@ class ApiIntegrationTest {
     private Long createApplication(String token) throws Exception {
         ApplicationCreateRequest req = new ApplicationCreateRequest(
                 "토스", "백엔드", ApplicationStatus.APPLIED,
-                LocalDate.now(), LocalDate.now().plusDays(7), "https://toss.im", "메모");
+                LocalDate.now(), LocalDate.now().plusDays(7), null, null, "https://toss.im", "메모");
         String body = mockMvc.perform(post("/api/v1/applications")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)

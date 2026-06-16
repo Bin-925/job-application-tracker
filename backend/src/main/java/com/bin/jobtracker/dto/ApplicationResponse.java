@@ -5,6 +5,7 @@ import com.bin.jobtracker.enums.ApplicationSource;
 import com.bin.jobtracker.enums.ApplicationStatus;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 public record ApplicationResponse(
         Long id,
@@ -13,16 +14,17 @@ public record ApplicationResponse(
         ApplicationStatus status,
         LocalDate appliedDate,
         LocalDate deadline,
+        LocalDate interviewDate,
+        LocalTime interviewTime,
         String link,
         String memo,
         ApplicationSource source,
         LocalDateTime createdAt
 ) {
-    // 엔티티 → 응답 변환
     public static ApplicationResponse from(Application a) {
         return new ApplicationResponse(
                 a.getId(), a.getCompany(), a.getPosition(), a.getStatus(),
-                a.getAppliedDate(), a.getDeadline(), a.getLink(), a.getMemo(),
-                a.getSource(), a.getCreatedAt());
+                a.getAppliedDate(), a.getDeadline(), a.getInterviewDate(), a.getInterviewTime(),
+                a.getLink(), a.getMemo(), a.getSource(), a.getCreatedAt());
     }
 }

@@ -32,7 +32,8 @@ public class ApplicationService {
                 .orElseThrow(() -> new IllegalArgumentException("회원을 찾을 수 없습니다."));
         Application application = new Application(
                 member, req.company(), req.position(), req.status(),
-                req.appliedDate(), req.deadline(), req.link(), req.memo());
+                req.appliedDate(), req.deadline(), req.interviewDate(), req.interviewTime(),
+                req.link(), req.memo());
         return applicationRepository.save(application);
     }
 
@@ -50,7 +51,8 @@ public class ApplicationService {
     public Application update(Long memberId, Long applicationId, ApplicationUpdateRequest req) {
         Application app = findOwned(memberId, applicationId);
         app.update(req.company(), req.position(), req.status(),
-                req.appliedDate(), req.deadline(), req.link(), req.memo());
+                req.appliedDate(), req.deadline(), req.interviewDate(), req.interviewTime(),
+                req.link(), req.memo());
         return app;
     }
 
@@ -71,10 +73,10 @@ public class ApplicationService {
     public Map<ApplicationStatus, Long> getStats(Long memberId) {
         Map<ApplicationStatus, Long> result = new EnumMap<>(ApplicationStatus.class);
         for (ApplicationStatus s : ApplicationStatus.values()) {
-            result.put(s, 0L);                       // 0개인 상태도 결과에 포함
+            result.put(s, 0L);
         }
         for (StatusCount sc : applicationRepository.countByStatus(memberId)) {
-            result.put(sc.status(), sc.count());     // 실제 개수로 덮어씀
+            result.put(sc.status(), sc.count());
         }
         return result;
     }

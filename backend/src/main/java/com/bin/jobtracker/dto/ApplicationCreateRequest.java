@@ -4,6 +4,7 @@ import com.bin.jobtracker.enums.ApplicationStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 public record ApplicationCreateRequest(
         @NotBlank String company,
@@ -11,6 +12,8 @@ public record ApplicationCreateRequest(
         @NotNull ApplicationStatus status,
         LocalDate appliedDate,
         LocalDate deadline,
+        LocalDate interviewDate,
+        LocalTime interviewTime,
         String link,
         String memo
 ) {}
