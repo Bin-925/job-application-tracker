@@ -7,6 +7,7 @@ import MyPage from './pages/MyPage'
 import LoginPage from './pages/LoginPage'
 import JoinPage from './pages/JoinPage'
 import ApplicationNewPage from './pages/ApplicationNewPage'
+import ApplicationEditPage from './pages/ApplicationEditPage'
 
 function App() {
     return (
@@ -22,6 +23,7 @@ function App() {
                         <Route path="/mypage" element={<MyPage />} />
                     </Route>
                     <Route path="/applications/new" element={<ApplicationNewPage />} />
+                    <Route path="/applications/:id/edit" element={<ApplicationEditPage />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" />} />
