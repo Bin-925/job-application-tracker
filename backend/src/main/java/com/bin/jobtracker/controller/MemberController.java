@@ -26,6 +26,14 @@ public class MemberController {
         return ResponseEntity.status(HttpStatus.CREATED).body("회원가입 완료");
     }
 
+    @GetMapping("/check-username")
+    public ResponseEntity<Void> checkUsername(@RequestParam String username) {
+        if (memberService.existsByUsername(username)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build(); // 409 = 중복
+        }
+        return ResponseEntity.ok().build(); // 200 = 사용 가능
+    }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest req) {
         Member member = memberService.login(req.username(), req.password());

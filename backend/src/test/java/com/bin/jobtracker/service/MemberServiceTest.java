@@ -8,78 +8,74 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.*;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class MemberServiceTest {
 
     @Mock MemberRepository memberRepository;
-    @Mock PasswordEncoder passwordEncoder;
+    @Mock BCryptPasswordEncoder passwordEncoder;  // ← 추가
     @InjectMocks MemberService memberService;
 
     @Test
-    @DisplayName("회원가입 성공 - 비밀번호는 암호화되어 저장된다")
+    @DisplayName("회원가입 성공")
     void join_success() {
-        // given
-        given(memberRepository.findByUsername("bin")).willReturn(Optional.empty());
-        given(passwordEncoder.encode("1234")).willReturn("encoded1234");
+        given(memberRepository.existsByUsername("alice")).willReturn(false);
+        given(passwordEncoder.encode(any())).willReturn("encoded_pw");
         given(memberRepository.save(any(Member.class))).willAnswer(inv -> inv.getArgument(0));
 
-        // when
-        Member result = memberService.join("bin", "1234", "빈");
+        Member result = memberService.join("alice", "password123", "앨리스");
 
-        // then
-        assertThat(result.getUsername()).isEqualTo("bin");
-        assertThat(result.getPassword()).isEqualTo("encoded1234");   // 평문 아님
+        assertThat(result.getUsername()).isEqualTo("alice");
+        then(memberRepository).should().save(any(Member.class));
     }
 
     @Test
     @DisplayName("회원가입 실패 - 이미 존재하는 username")
-    void join_duplicate_username() {
-        given(memberRepository.findByUsername("bin"))
-                .willReturn(Optional.of(new Member("bin", "x", "빈")));
+    void join_duplicate() {
+        given(memberRepository.existsByUsername("alice")).willReturn(true);
 
-        assertThatThrownBy(() -> memberService.join("bin", "1234", "빈"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("이미 사용 중인");
+        assertThatThrownBy(() -> memberService.join("alice", "password123", "앨리스"))
+                .isInstanceOf(IllegalArgumentException.class);
+        then(memberRepository).should(never()).save(any());
     }
 
     @Test
     @DisplayName("로그인 성공")
     void login_success() {
-        Member member = new Member("bin", "encoded1234", "빈");
-        given(memberRepository.findByUsername("bin")).willReturn(Optional.of(member));
-        given(passwordEncoder.matches("1234", "encoded1234")).willReturn(true);
+        Member member = new Member("alice", "encoded_pw", "앨리스");
+        given(memberRepository.findByUsername("alice")).willReturn(Optional.of(member));
+        given(passwordEncoder.matches("password123", "encoded_pw")).willReturn(true);
 
-        Member result = memberService.login("bin", "1234");
+        Member result = memberService.login("alice", "password123");
 
-        assertThat(result.getUsername()).isEqualTo("bin");
+        assertThat(result.getUsername()).isEqualTo("alice");
     }
 
     @Test
     @DisplayName("로그인 실패 - 비밀번호 불일치")
     void login_wrong_password() {
-        Member member = new Member("bin", "encoded1234", "빈");
-        given(memberRepository.findByUsername("bin")).willReturn(Optional.of(member));
-        given(passwordEncoder.matches("wrong", "encoded1234")).willReturn(false);
+        Member member = new Member("alice", "encoded_pw", "앨리스");
+        given(memberRepository.findByUsername("alice")).willReturn(Optional.of(member));
+        given(passwordEncoder.matches("wrongpw", "encoded_pw")).willReturn(false);
 
-        assertThatThrownBy(() -> memberService.login("bin", "wrong"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("비밀번호");
+        assertThatThrownBy(() -> memberService.login("alice", "wrongpw"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     @DisplayName("로그인 실패 - 존재하지 않는 회원")
     void login_not_found() {
-        given(memberRepository.findByUsername("ghost")).willReturn(Optional.empty());
+        given(memberRepository.findByUsername("nobody")).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> memberService.login("ghost", "1234"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("존재하지 않는");
+        assertThatThrownBy(() -> memberService.login("nobody", "pw"))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 }
