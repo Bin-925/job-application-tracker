@@ -35,7 +35,6 @@ export default function LoginPage() {
                 <h1 className="text-2xl font-semibold">안녕하세요 👋</h1>
                 <p className="text-sm text-gray-500 mt-1">계속하려면 로그인해주세요</p>
             </div>
-
             <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
                     <label className="text-sm font-semibold text-gray-700">아이디</label>
@@ -45,7 +44,7 @@ export default function LoginPage() {
                         onChange={onChange}
                         onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
                         placeholder="아이디 입력"
-                        className="w-full bg-gray-100 dark:bg-gray-900 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
                 <div className="flex flex-col gap-1">
@@ -57,12 +56,10 @@ export default function LoginPage() {
                         onChange={onChange}
                         onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
                         placeholder="비밀번호 입력"
-                        className="w-full bg-gray-100 dark:bg-gray-900 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
-
                 {error && <p className="text-sm text-red-500">{error}</p>}
-
                 <button
                     onClick={onSubmit}
                     disabled={loading}
@@ -70,7 +67,6 @@ export default function LoginPage() {
                 >
                     {loading ? '로그인 중...' : '로그인'}
                 </button>
-
                 <p className="text-center text-sm text-gray-400 mt-2">
                     계정이 없으신가요?{' '}
                     <Link to="/join" className="text-blue-500 font-medium">회원가입</Link>

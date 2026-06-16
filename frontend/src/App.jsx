@@ -6,6 +6,7 @@ import CalendarPage from './pages/CalendarPage'
 import MyPage from './pages/MyPage'
 import LoginPage from './pages/LoginPage'
 import JoinPage from './pages/JoinPage'
+import ApplicationNewPage from './pages/ApplicationNewPage'
 
 function App() {
     return (
@@ -20,6 +21,7 @@ function App() {
                         <Route path="/calendar" element={<CalendarPage />} />
                         <Route path="/mypage" element={<MyPage />} />
                     </Route>
+                    <Route path="/applications/new" element={<ApplicationNewPage />} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" />} />

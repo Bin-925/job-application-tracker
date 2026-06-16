@@ -7,8 +7,10 @@ export default function JoinPage() {
     const navigate = useNavigate()
     const [form, setForm] = useState({ username: '', password: '', nickname: '' })
     const [errors, setErrors] = useState({})
-    const [usernameStatus, setUsernameStatus] = useState(null) // null | 'available' | 'taken' | 'checking'
+    const [usernameStatus, setUsernameStatus] = useState(null)
     const [loading, setLoading] = useState(false)
+
+    const inputClass = "w-full bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
 
     const validate = () => {
         const e = {}
@@ -47,10 +49,7 @@ export default function JoinPage() {
 
     const onSubmit = async () => {
         const e = validate()
-        if (Object.keys(e).length > 0) {
-            setErrors(e)
-            return
-        }
+        if (Object.keys(e).length > 0) { setErrors(e); return }
         setLoading(true)
         try {
             await api.post('/members/join', form)
@@ -68,9 +67,7 @@ export default function JoinPage() {
                 <h1 className="text-2xl font-semibold">회원가입</h1>
                 <p className="text-sm text-gray-500 mt-1">지원 현황을 관리해보세요</p>
             </div>
-
             <div className="flex flex-col gap-3">
-                {/* 아이디 + 중복확인 */}
                 <div className="flex flex-col gap-1">
                     <label className="text-sm font-semibold text-gray-700">아이디</label>
                     <div className="flex gap-2">
@@ -80,11 +77,11 @@ export default function JoinPage() {
                             onChange={onChange}
                             onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
                             placeholder="영문 소문자·숫자 4~20자"
-                            className="flex-1 bg-gray-100 dark:bg-gray-900 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <button
                             onClick={checkUsername}
-                            className="bg-gray-200 dark:bg-gray-800 rounded-xl px-4 py-3 text-sm font-medium whitespace-nowrap"
+                            className="bg-gray-100 dark:bg-gray-700 rounded-xl px-4 py-3 text-sm font-medium whitespace-nowrap"
                         >
                             중복 확인
                         </button>
@@ -98,42 +95,26 @@ export default function JoinPage() {
                     {usernameStatus === 'taken' && <p className="text-xs text-red-500">이미 사용 중인 아이디입니다.</p>}
                 </div>
 
-                {/* 비밀번호 */}
                 <div className="flex flex-col gap-1">
                     <label className="text-sm font-semibold text-gray-700">비밀번호</label>
-                    <input
-                        name="password"
-                        type="password"
-                        value={form.password}
-                        onChange={onChange}
-                        onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
-                        placeholder="영문+숫자 조합 8자 이상"
-                        className="w-full bg-gray-100 dark:bg-gray-900 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <input name="password" type="password" value={form.password}
+                           onChange={onChange} onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
+                           placeholder="영문+숫자 조합 8자 이상" className={inputClass} />
                     {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
                 </div>
 
-                {/* 닉네임 */}
                 <div className="flex flex-col gap-1">
                     <label className="text-sm font-semibold text-gray-700">닉네임</label>
-                    <input
-                        name="nickname"
-                        value={form.nickname}
-                        onChange={onChange}
-                        onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
-                        placeholder="1~10자"
-                        className="w-full bg-gray-100 dark:bg-gray-900 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                    <input name="nickname" value={form.nickname}
+                           onChange={onChange} onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
+                           placeholder="1~10자" className={inputClass} />
                     {errors.nickname && <p className="text-xs text-red-500">{errors.nickname}</p>}
                 </div>
 
                 {errors.general && <p className="text-sm text-red-500">{errors.general}</p>}
 
-                <button
-                    onClick={onSubmit}
-                    disabled={loading}
-                    className="w-full bg-blue-500 text-white rounded-xl py-3 text-sm font-medium mt-2 disabled:opacity-50"
-                >
+                <button onClick={onSubmit} disabled={loading}
+                        className="w-full bg-blue-500 text-white rounded-xl py-3 text-sm font-medium mt-2 disabled:opacity-50">
                     {loading ? '가입 중...' : '회원가입'}
                 </button>
 
