@@ -5,7 +5,7 @@ export default function TabBar() {
     const active = "text-blue-500"
 
     return (
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-sm flex border-t border-gray-200 bg-white dark:bg-black dark:border-gray-800">
+        <nav className="absolute bottom-0 left-0 w-full flex border-t border-gray-200 bg-white dark:bg-black dark:border-gray-800">
             <NavLink to="/" end className={({ isActive }) => `${base} ${isActive ? active : ''}`}>
                 <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l9-9 9 9M4 10v10h6v-6h4v6h6V10"/></svg>
                 홈
