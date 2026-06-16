@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import api from '../api/client'
+import axios from 'axios'
 
 export default function JoinPage() {
     const navigate = useNavigate()
@@ -35,9 +36,9 @@ export default function JoinPage() {
             return
         }
         setUsernameStatus('checking')
-        setErrors({ ...errors, username: '', usernameCheck: '' })  // ← 에러 초기화
+        setErrors({ ...errors, username: '', usernameCheck: '' })
         try {
-            await api.get(`/members/check-username?username=${form.username}`)
+            await axios.get(`http://localhost:8080/api/v1/members/check-username?username=${form.username}`)
             setUsernameStatus('available')
         } catch {
             setUsernameStatus('taken')
