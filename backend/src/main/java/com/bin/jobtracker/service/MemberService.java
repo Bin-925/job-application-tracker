@@ -61,4 +61,18 @@ public class MemberService {
         member.updateAvatar(avatar);
         return member;
     }
+
+    @Transactional
+    public void changePassword(Long memberId, String currentPassword, String newPassword) {
+        Member member = findById(memberId);
+        // 현재 비밀번호 확인
+        if (!passwordEncoder.matches(currentPassword, member.getPassword())) {
+            throw new IllegalArgumentException("현재 비밀번호가 올바르지 않습니다.");
+        }
+        // 새 비밀번호가 기존과 같으면 막기
+        if (passwordEncoder.matches(newPassword, member.getPassword())) {
+            throw new IllegalArgumentException("새 비밀번호가 기존 비밀번호와 같습니다.");
+        }
+        member.updatePassword(passwordEncoder.encode(newPassword));
+    }
 }

@@ -61,6 +61,14 @@ public class MemberController {
         return ResponseEntity.ok(MemberResponse.from(member));
     }
 
+    @PatchMapping("/me/password")
+    public ResponseEntity<Void> changePassword(
+            @AuthenticationPrincipal Long memberId,
+            @RequestBody @Valid PasswordUpdateRequest req) {
+        memberService.changePassword(memberId, req.currentPassword(), req.newPassword());
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/me")
     public ResponseEntity<Void> deleteMember(@AuthenticationPrincipal Long memberId) {
         memberService.deleteMember(memberId);
