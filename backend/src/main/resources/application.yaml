@@ -2,19 +2,16 @@ spring:
   config:
     import: optional:application-secret.yml
   datasource:
-    url: jdbc:h2:mem:jobtracker
-    username: sa
-    password:
-  h2:
-    console:
-      enabled: true
+    url: jdbc:mysql://localhost:3306/jobtracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-
+        dialect: org.hibernate.dialect.MySQLDialect
 jwt:
   expiration-ms: 3600000

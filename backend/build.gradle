@@ -22,7 +22,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	compileOnly 'org.projectlombok:lombok'
-	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'com.mysql:mysql-connector-j'   // 실행용 MySQL
+	testRuntimeOnly 'com.h2database:h2'          // 테스트용 H2
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testCompileOnly 'org.projectlombok:lombok'
@@ -30,8 +31,7 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	// 비밀번호 암호화 + (나중에) JWT 인증
 	implementation 'org.springframework.boot:spring-boot-starter-security'
-
-    // Swagger (이제 API 테스트가 편해짐)
+	// Swagger (이제 API 테스트가 편해짐)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
 	implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
