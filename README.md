@@ -6,12 +6,18 @@
 ### 🗂️ 구직 지원 현황 트래커
 ![CI](https://github.com/Bin-925/job-application-tracker/actions/workflows/ci.yml/badge.svg)
 
-지원한 채용공고를 등록하고 **진행 상태(지원예정 → 지원완료 → 서류합격 → 면접 → 최종합격/불합격)** 를 관리하는 풀스택 서비스입니다.
-**모바일 사용 환경**을 가정한 모바일 우선(Mobile-First) 디자인으로, 지원일·면접일·마감일을 **캘린더**에서 한눈에 확인할 수 있습니다.
+지원한 채용공고를 등록하고 **진행 상태**를 관리하는 풀스택 서비스입니다.
+
+`지원예정 → 지원완료 → 서류합격 → 면접 → 최종합격 / 불합격`
+
+**모바일 우선(Mobile-First)** 디자인 · 지원일·면접일·마감일을 **캘린더**에서 한눈에
 
 ## 📑 문서
-- 🧪 [테스트 케이스](docs/TEST_CASES.md) — 테스트 검증 내역
-- 🔧 [트러블슈팅](TROUBLESHOOTING.md) — 개발 중 마주친 문제와 해결 과정
+
+🧪 [테스트 케이스](docs/TEST_CASES.md) · 테스트 검증 내역
+&nbsp;
+
+🔧 [트러블슈팅](TROUBLESHOOTING.md) · 개발 중 마주친 문제와 해결 과정
 
 </div>
 
@@ -181,43 +187,28 @@ erDiagram
 <br/>
 
 ## 📁 프로젝트 구조
+
+```
 job-application-tracker/
-
 ├── backend/                         # Spring Boot REST API
-
 │   └── src/main/java/com/bin/jobtracker/
-
 │       ├── config/                  # Security · CORS · Swagger 설정
-
 │       ├── controller/              # REST 컨트롤러
-
 │       ├── dto/                     # 요청/응답 DTO
-
 │       ├── entity/                  # JPA 엔티티
-
 │       ├── enums/                   # 상태·출처 enum
-
 │       ├── exception/               # 커스텀 예외 · 핸들러
-
 │       ├── repository/              # JPA 레포지토리
-
 │       ├── security/                # JWT 필터 · 토큰 provider
-
 │       └── service/                 # 비즈니스 로직
-
 │
-
 └── frontend/                        # React SPA
-
-└── src/
-
-├── api/                     # axios 클라이언트
-
-├── store/                   # 토큰 관리
-
-├── components/layout/       # 레이아웃 · 탭바 · 폰 프레임
-
-└── pages/                   # 화면 (홈·캘린더·지원·마이페이지 등)
+    └── src/
+        ├── api/                     # axios 클라이언트
+        ├── store/                   # 토큰 관리
+        ├── components/layout/       # 레이아웃 · 탭바 · 폰 프레임
+        └── pages/                   # 화면 (홈·캘린더·지원·마이페이지 등)
+```
 
 <br/>
 
@@ -252,27 +243,31 @@ cd frontend
 pnpm install
 pnpm dev
 ```
-http://localhost:5173
 
-</details>
+```
+http://localhost:5173
+```
 
 <br/>
 
 ## ✅ 테스트 & CI
 
 - 단위 · 통합 테스트 (JUnit 5 · Mockito · MockMvc)
-- **GitHub Actions**: `push` / `PR` 시 테스트 자동 실행
+- **GitHub Actions**: `push` 시 테스트 자동 실행
 - 버그는 **GitHub Issues**로 트래킹
 
 <br/>
 
 ## 🌿 브랜치 전략
+
+```
 feat/*  ─►  main
+```
 
 | 브랜치 | 설명 |
 |--------|------|
 | `main` | 배포 가능한 안정 브랜치 |
-| `feat/*` | 기능 개발 브랜치 (작업 후 PR로 머지) |
+| `feat/*` | 기능 개발 브랜치 |
 
 <br/>
 
