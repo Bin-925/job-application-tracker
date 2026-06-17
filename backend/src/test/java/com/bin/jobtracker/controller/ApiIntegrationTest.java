@@ -1,8 +1,11 @@
 package com.bin.jobtracker.controller;
 
 import com.bin.jobtracker.dto.ApplicationCreateRequest;
+import com.bin.jobtracker.dto.AvatarUpdateRequest;
 import com.bin.jobtracker.dto.JoinRequest;
 import com.bin.jobtracker.dto.LoginRequest;
+import com.bin.jobtracker.dto.NicknameUpdateRequest;
+import com.bin.jobtracker.dto.PasswordUpdateRequest;
 import com.bin.jobtracker.enums.ApplicationStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
@@ -24,8 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class ApiIntegrationTest {
 
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
+    @Autowired
+    MockMvc mockMvc;
+    @Autowired
+    ObjectMapper objectMapper;
 
     private static final String TEST_PW = "Test1234";
 
@@ -59,6 +64,8 @@ class ApiIntegrationTest {
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(body).get("id").asLong();
     }
+
+    // ===== 지원(Application) API 테스트 =====
 
     @Test
     @DisplayName("회원가입 → 201")
@@ -114,5 +121,114 @@ class ApiIntegrationTest {
         mockMvc.perform(get("/api/v1/applications/99999")
                         .header("Authorization", "Bearer " + token))
                 .andExpect(status().isNotFound());
+    }
+// ===== 회원(Member) API 테스트 =====
+
+    @Test
+    @DisplayName("★ 내 정보 조회 → 가입 정보 반환")
+    void getMe_success() throws Exception {
+        join("membera");
+        String token = loginAndGetToken("membera");
+
+        mockMvc.perform(get("/api/v1/members/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("membera"))
+                .andExpect(jsonPath("$.nickname").value("membera닉"));
+    }
+
+    @Test
+    @DisplayName("★ 토큰 없이 내 정보 조회 → 401")
+    void getMe_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/api/v1/members/me"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("★ 닉네임 수정 → 반영됨")
+    void updateNickname_success() throws Exception {
+        join("memberb");
+        String token = loginAndGetToken("memberb");
+
+        String body = objectMapper.writeValueAsString(new NicknameUpdateRequest("새닉네임"));
+
+        mockMvc.perform(patch("/api/v1/members/me/nickname")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nickname").value("새닉네임"));
+    }
+
+    @Test
+    @DisplayName("★ 아바타 수정 → 반영됨")
+    void updateAvatar_success() throws Exception {
+        join("memberc");
+        String token = loginAndGetToken("memberc");
+
+        String body = objectMapper.writeValueAsString(new AvatarUpdateRequest("🐱"));
+
+        mockMvc.perform(patch("/api/v1/members/me/avatar")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.avatar").value("🐱"));
+    }
+
+    @Test
+    @DisplayName("★ 비밀번호 변경 - 현재 비밀번호 틀리면 400")
+    void changePassword_wrongCurrent_returns400() throws Exception {
+        join("memberd");
+        String token = loginAndGetToken("memberd");
+
+        String body = objectMapper.writeValueAsString(
+                new PasswordUpdateRequest("WrongPw1", "NewPw1234"));
+
+        mockMvc.perform(patch("/api/v1/members/me/password")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("★ 비밀번호 변경 성공 → 새 비밀번호로 로그인 가능")
+    void changePassword_success() throws Exception {
+        join("membere");
+        String token = loginAndGetToken("membere");
+
+        String newPw = "NewPw1234";
+        String body = objectMapper.writeValueAsString(
+                new PasswordUpdateRequest(TEST_PW, newPw));
+
+        mockMvc.perform(patch("/api/v1/members/me/password")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isNoContent());
+
+        LoginRequest loginReq = new LoginRequest("membere", newPw);
+        mockMvc.perform(post("/api/v1/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("★ 회원 탈퇴 → 204, 이후 로그인 실패")
+    void deleteMember_success() throws Exception {
+        join("memberf");
+        String token = loginAndGetToken("memberf");
+
+        mockMvc.perform(delete("/api/v1/members/me")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        LoginRequest loginReq = new LoginRequest("memberf", TEST_PW);
+        mockMvc.perform(post("/api/v1/members/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isBadRequest());
     }
 }
