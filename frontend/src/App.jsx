@@ -12,6 +12,7 @@ import ApplicationEditPage from './pages/ApplicationEditPage'
 import ApplicationDetailPage from './pages/ApplicationDetailPage'
 import AccountPage from './pages/AccountPage'
 import PasswordChangePage from './pages/PasswordChangePage'
+import NotificationsPage from './pages/NotificationsPage'
 
 // 탭바 없는 페이지를 폰 프레임으로 감싸는 래퍼
 function Framed({ children }) {
@@ -42,6 +43,7 @@ function App() {
                     <Route path="/applications/:id/edit" element={<Framed><ApplicationEditPage /></Framed>} />
                     <Route path="/mypage/account" element={<Framed><AccountPage /></Framed>} />
                     <Route path="/mypage/account/password" element={<Framed><PasswordChangePage /></Framed>} />
+                    <Route path="/notifications" element={<Framed><NotificationsPage /></Framed>} />
                 </Route>
 
                 <Route path="*" element={<Navigate to="/" />} />

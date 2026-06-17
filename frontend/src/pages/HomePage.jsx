@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
+import { getNotifications } from '../utils/notifications'
 
 const STATUS_LABEL = {
     TO_APPLY: '지원예정',
@@ -68,11 +69,24 @@ export default function HomePage() {
         </div>
     )
 
+    // 3일 이내 알림 개수 (종 아이콘 빨간 점용)
+    const notiCount = getNotifications(applications).length
+
     return (
         <div className="px-4 pt-6 pb-4">
-            <div className="mb-5">
-                <h1 className="text-lg font-semibold">지원 트래커</h1>
-                <p className="text-sm text-gray-400 mt-0.5">내 지원 현황을 한눈에</p>
+            <div className="flex items-start justify-between mb-5">
+                <div>
+                    <h1 className="text-lg font-semibold">지원 트래커</h1>
+                    <p className="text-sm text-gray-400 mt-0.5">내 지원 현황을 한눈에</p>
+                </div>
+                <button onClick={() => navigate('/notifications')} className="relative p-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    {notiCount > 0 && (
+                        <span className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-black" />
+                    )}
+                </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
