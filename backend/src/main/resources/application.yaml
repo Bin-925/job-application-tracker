@@ -1,6 +1,7 @@
 spring:
   config:
     import: optional:application-secret.yml
+  # 기본 프로파일 = 로컬 개발(MySQL)
   datasource:
     url: jdbc:mysql://localhost:3306/jobtracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
     username: root
@@ -12,6 +13,5 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
 jwt:
   expiration-ms: 3600000
