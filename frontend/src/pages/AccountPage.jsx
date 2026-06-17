@@ -152,6 +152,17 @@ export default function AccountPage() {
                         <p className={valueClass}>{member?.username}</p>
                     </div>
 
+                    {/* 비밀번호 변경 */}
+                    <button
+                        onClick={() => navigate('/mypage/account/password')}
+                        className="w-full py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between"
+                    >
+                        <p className={labelClass}>비밀번호 변경</p>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
+
                     {/* 가입일 */}
                     <div className="py-4">
                         <p className={`${labelClass} mb-1`}>가입일</p>

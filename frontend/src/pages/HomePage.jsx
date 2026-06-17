@@ -37,7 +37,6 @@ export default function HomePage() {
     const [stats, setStats] = useState({})
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('ALL')
-    const dragScroll = useDragScroll()
 
     useEffect(() => {
         const fetchData = async () => {
