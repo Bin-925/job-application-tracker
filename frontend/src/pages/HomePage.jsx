@@ -21,7 +21,6 @@ const STATUS_STYLE = {
     REJECTED: 'bg-red-100 text-red-600',
 }
 
-// 필터 칩 목록 (전체 + 6개 상태)
 const FILTERS = [
     { value: 'ALL', label: '전체' },
     { value: 'TO_APPLY', label: '지원예정' },
@@ -32,12 +31,21 @@ const FILTERS = [
     { value: 'REJECTED', label: '불합격' },
 ]
 
+const SORT_OPTIONS = [
+    { value: 'appliedDate', label: '지원일' },
+    { value: 'deadline', label: '마감일' },
+    { value: 'interviewDate', label: '면접일' },
+]
+
 export default function HomePage() {
     const navigate = useNavigate()
     const [applications, setApplications] = useState([])
     const [stats, setStats] = useState({})
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('ALL')
+    const [search, setSearch] = useState('')
+    const [sortKey, setSortKey] = useState('appliedDate')
+    const [sortDesc, setSortDesc] = useState(true)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -57,11 +65,28 @@ export default function HomePage() {
     }, [])
 
     const inProgress = (stats.APPLIED || 0) + (stats.DOC_PASSED || 0) + (stats.INTERVIEW || 0)
+    const notiCount = getNotifications(applications).length
 
-    // 선택된 필터에 맞는 목록만
-    const filteredApps = filter === 'ALL'
+    // 필터 → 검색 → 정렬
+    let visibleApps = filter === 'ALL'
         ? applications
         : applications.filter((app) => app.status === filter)
+
+    if (search.trim()) {
+        const q = search.trim().toLowerCase()
+        visibleApps = visibleApps.filter((app) =>
+            app.company?.toLowerCase().includes(q))
+    }
+
+    visibleApps = [...visibleApps].sort((a, b) => {
+        const av = a[sortKey]
+        const bv = b[sortKey]
+        if (!av && !bv) return 0
+        if (!av) return 1
+        if (!bv) return -1
+        const cmp = av.localeCompare(bv)
+        return sortDesc ? -cmp : cmp
+    })
 
     if (loading) return (
         <div className="flex justify-center items-center h-full text-gray-400 text-sm">
@@ -69,8 +94,14 @@ export default function HomePage() {
         </div>
     )
 
-    // 3일 이내 알림 개수 (종 아이콘 빨간 점용)
-    const notiCount = getNotifications(applications).length
+    const selectClass = "w-full appearance-none bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg pl-3 pr-7 py-1.5 text-xs outline-none cursor-pointer"
+    const chevron = (
+        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400">
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </span>
+    )
 
     return (
         <div className="px-4 pt-6 pb-4">
@@ -103,29 +134,60 @@ export default function HomePage() {
                 ))}
             </div>
 
-            {/* 필터 칩 */}
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-3 -mx-4 px-4">
-                {FILTERS.map((f) => (
-                    <button
-                        key={f.value}
-                        onClick={() => setFilter(f.value)}
-                        className={`flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                            filter === f.value
-                                ? 'bg-blue-500 text-white border-blue-500'
-                                : 'bg-transparent text-gray-500 border-gray-300 dark:border-gray-600'
-                        }`}
+            {/* 검색창 */}
+            <div className="relative mb-3">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </span>
+                <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="회사명 검색"
+                    className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                />
+            </div>
+
+            {/* 상태 필터 + 정렬 기준 + 정렬 방향 (한 줄) */}
+            <div className="flex items-center gap-2 mb-3">
+                <div className="relative flex-[3]">
+                    <select value={filter} onChange={(e) => setFilter(e.target.value)} className={selectClass}>
+                        {FILTERS.map((f) => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                        ))}
+                    </select>
+                    {chevron}
+                </div>
+
+                <div className="relative flex-[3]">
+                    <select value={sortKey} onChange={(e) => setSortKey(e.target.value)} className={selectClass}>
+                        {SORT_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+                    {chevron}
+                </div>
+
+                <div className="relative flex-[4]">
+                    <select
+                        value={sortDesc ? 'desc' : 'asc'}
+                        onChange={(e) => setSortDesc(e.target.value === 'desc')}
+                        className={selectClass}
                     >
-                        {f.label}
-                    </button>
-                ))}
+                        <option value="desc">늦은 날짜순</option>
+                        <option value="asc">빠른 날짜순</option>
+                    </select>
+                    {chevron}
+                </div>
             </div>
 
             <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold">내 지원</span>
-                <span className="text-xs text-gray-400">{filteredApps.length}건</span>
+                <span className="text-xs text-gray-400">{visibleApps.length}건</span>
             </div>
 
-            {filteredApps.length === 0 ? (
+            {visibleApps.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-gray-300">
                     {applications.length === 0 ? (
                         <>
@@ -133,12 +195,12 @@ export default function HomePage() {
                             <p className="text-xs mt-1">아래 + 버튼으로 추가해보세요</p>
                         </>
                     ) : (
-                        <p className="text-sm">해당 상태의 지원이 없어요</p>
+                        <p className="text-sm">조건에 맞는 지원이 없어요</p>
                     )}
                 </div>
             ) : (
                 <div className="flex flex-col gap-2">
-                    {filteredApps.map((app) => (
+                    {visibleApps.map((app) => (
                         <div
                             key={app.id}
                             onClick={() => navigate(`/calendar?date=${app.appliedDate || ''}`)}
