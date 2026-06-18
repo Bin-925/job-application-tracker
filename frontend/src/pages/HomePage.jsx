@@ -21,6 +21,8 @@ const STATUS_STYLE = {
     REJECTED: 'bg-red-100 text-red-600',
 }
 
+const STATUS_ORDER = ['TO_APPLY', 'APPLIED', 'DOC_PASSED', 'INTERVIEW', 'ACCEPTED', 'REJECTED']
+
 const FILTERS = [
     { value: 'ALL', label: '전체' },
     { value: 'TO_APPLY', label: '지원예정' },
@@ -46,23 +48,49 @@ export default function HomePage() {
     const [search, setSearch] = useState('')
     const [sortKey, setSortKey] = useState('appliedDate')
     const [sortDesc, setSortDesc] = useState(true)
+    const [openStatusId, setOpenStatusId] = useState(null)  // 어떤 카드의 상태 메뉴가 열렸나
+
+    const fetchData = async () => {
+        try {
+            const [appRes, statRes] = await Promise.all([
+                api.get('/applications'),
+                api.get('/applications/stats'),
+            ])
+            setApplications(appRes.data)
+            setStats(statRes.data)
+        } catch {
+        } finally {
+            setLoading(false)
+        }
+    }
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [appRes, statRes] = await Promise.all([
-                    api.get('/applications'),
-                    api.get('/applications/stats'),
-                ])
-                setApplications(appRes.data)
-                setStats(statRes.data)
-            } catch {
-            } finally {
-                setLoading(false)
-            }
-        }
         fetchData()
     }, [])
+
+    // 상태 변경 (배지에서 선택 시)
+    const changeStatus = async (e, appId, newStatus) => {
+        e.stopPropagation()           // 카드 클릭(캘린더 이동) 막기
+        setOpenStatusId(null)         // 메뉴 닫기
+        // 화면 먼저 갱신 (낙관적 업데이트) — 반응이 빨라 보임
+        setApplications((prev) =>
+            prev.map((app) => (app.id === appId ? { ...app, status: newStatus } : app)))
+        try {
+            await api.patch(`/applications/${appId}/status`, { status: newStatus })
+            // 통계도 다시 불러오기 (상단 카운트 갱신)
+            const statRes = await api.get('/applications/stats')
+            setStats(statRes.data)
+        } catch {
+            // 실패하면 데이터 다시 불러와서 되돌림
+            fetchData()
+        }
+    }
+
+    // 배지 탭 (메뉴 열기/닫기)
+    const toggleStatusMenu = (e, appId) => {
+        e.stopPropagation()           // 카드 클릭 막기
+        setOpenStatusId(openStatusId === appId ? null : appId)
+    }
 
     const inProgress = (stats.APPLIED || 0) + (stats.DOC_PASSED || 0) + (stats.INTERVIEW || 0)
     const notiCount = getNotifications(applications).length
@@ -104,7 +132,7 @@ export default function HomePage() {
     )
 
     return (
-        <div className="px-4 pt-6 pb-4">
+        <div className="px-4 pt-6 pb-4" onClick={() => setOpenStatusId(null)}>
             <div className="flex items-start justify-between mb-5">
                 <div>
                     <h1 className="text-lg font-semibold">지원 트래커</h1>
@@ -144,13 +172,14 @@ export default function HomePage() {
                 <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
                     placeholder="회사명 검색"
                     className="w-full bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl pl-9 pr-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                 />
             </div>
 
             {/* 상태 필터 + 정렬 기준 + 정렬 방향 (한 줄) */}
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-3" onClick={(e) => e.stopPropagation()}>
                 <div className="relative flex-[3]">
                     <select value={filter} onChange={(e) => setFilter(e.target.value)} className={selectClass}>
                         {FILTERS.map((f) => (
@@ -212,9 +241,37 @@ export default function HomePage() {
                                     <p className="text-xs text-gray-400 mt-0.5 truncate">{app.position}</p>
                                 </div>
                                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLE[app.status]}`}>
-                    {STATUS_LABEL[app.status]}
-                  </span>
+                                    {/* 상태 배지 (탭하면 드롭다운) */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={(e) => toggleStatusMenu(e, app.id)}
+                                            className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 ${STATUS_STYLE[app.status]}`}
+                                        >
+                                            {STATUS_LABEL[app.status]}
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        {/* 상태 선택 드롭다운 */}
+                                        {openStatusId === app.id && (
+                                            <div
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="absolute right-0 mt-1 w-28 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-20 overflow-hidden"
+                                            >
+                                                {STATUS_ORDER.map((st) => (
+                                                    <button
+                                                        key={st}
+                                                        onClick={(e) => changeStatus(e, app.id, st)}
+                                                        className={`w-full text-left text-xs px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                                                            st === app.status ? 'font-semibold text-blue-500' : 'text-gray-700 dark:text-gray-300'
+                                                        }`}
+                                                    >
+                                                        {STATUS_LABEL[st]}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                     {app.deadline && (
                                         <span className="text-xs text-red-400">⏰ 마감 {app.deadline}</span>
                                     )}

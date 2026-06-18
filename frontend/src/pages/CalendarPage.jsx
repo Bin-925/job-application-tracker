@@ -11,6 +11,7 @@ const STATUS_STYLE = {
     DOC_PASSED: 'bg-indigo-100 text-indigo-600', INTERVIEW: 'bg-amber-100 text-amber-600',
     ACCEPTED: 'bg-green-100 text-green-600', REJECTED: 'bg-red-100 text-red-600',
 }
+const STATUS_ORDER = ['TO_APPLY', 'APPLIED', 'DOC_PASSED', 'INTERVIEW', 'ACCEPTED', 'REJECTED']
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토']
 
@@ -32,6 +33,7 @@ export default function CalendarPage() {
     const [applications, setApplications] = useState([])
     const [current, setCurrent] = useState(initDate)
     const [selected, setSelected] = useState(dateParam || todayKey)
+    const [openStatusId, setOpenStatusId] = useState(null)  // 상태 메뉴 열린 카드 (고유키)
 
     useEffect(() => {
         const fetch = async () => {
@@ -42,6 +44,29 @@ export default function CalendarPage() {
         }
         fetch()
     }, [])
+
+    // 상태 변경
+    const changeStatus = async (e, appId, newStatus) => {
+        e.stopPropagation()
+        setOpenStatusId(null)
+        // 원본 applications 갱신 → 캘린더의 모든 표시가 자동 반영됨
+        setApplications((prev) =>
+            prev.map((app) => (app.id === appId ? { ...app, status: newStatus } : app)))
+        try {
+            await api.patch(`/applications/${appId}/status`, { status: newStatus })
+        } catch {
+            // 실패 시 다시 불러와 되돌림
+            try {
+                const res = await api.get('/applications')
+                setApplications(res.data)
+            } catch {}
+        }
+    }
+
+    const toggleStatusMenu = (e, key) => {
+        e.stopPropagation()
+        setOpenStatusId(openStatusId === key ? null : key)
+    }
 
     const year = current.getFullYear()
     const month = current.getMonth()
@@ -75,7 +100,7 @@ export default function CalendarPage() {
     ]
 
     return (
-        <div className="px-4 pt-6 pb-4">
+        <div className="px-4 pt-6 pb-4" onClick={() => setOpenStatusId(null)}>
             <div className="flex items-center justify-between mb-5">
                 <button onClick={prevMonth} className="text-gray-400 p-1">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,7 +136,7 @@ export default function CalendarPage() {
                     return (
                         <button
                             key={key}
-                            onClick={() => setSelected(key)}
+                            onClick={(e) => { e.stopPropagation(); setSelected(key) }}
                             className="flex flex-col items-center py-1"
                         >
                             <div className={`w-8 h-8 flex items-center justify-center rounded-full text-sm ${
@@ -143,40 +168,70 @@ export default function CalendarPage() {
                     <p className="text-sm text-gray-300 text-center py-6">이 날짜에 일정이 없어요</p>
                 ) : (
                     <div className="flex flex-col gap-2">
-                        {allSelectedApps.map((app, i) => (
-                            <div
-                                key={`${app.id}-${app._type}-${i}`}
-                                onClick={() => navigate(`/applications/${app.id}`)}
-                                className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 cursor-pointer active:opacity-70"
-                            >
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className={`w-2 h-2 rounded-full ${app._color} flex-shrink-0`} />
-                                            <span className="text-xs text-gray-400">{app._type}</span>
+                        {allSelectedApps.map((app, i) => {
+                            const cardKey = `${app.id}-${app._type}-${i}`
+                            return (
+                                <div
+                                    key={cardKey}
+                                    onClick={() => navigate(`/applications/${app.id}`)}
+                                    className="bg-gray-100 dark:bg-gray-800 rounded-2xl p-4 cursor-pointer active:opacity-70"
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full ${app._color} flex-shrink-0`} />
+                                                <span className="text-xs text-gray-400">{app._type}</span>
+                                            </div>
+                                            <p className="text-sm font-semibold truncate mt-1">{app.company}</p>
+                                            <p className="text-xs text-gray-400 mt-0.5 truncate">{app.position}</p>
                                         </div>
-                                        <p className="text-sm font-semibold truncate mt-1">{app.company}</p>
-                                        <p className="text-xs text-gray-400 mt-0.5 truncate">{app.position}</p>
+                                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                            {/* 상태 배지 (탭하면 드롭다운) */}
+                                            <div className="relative">
+                                                <button
+                                                    onClick={(e) => toggleStatusMenu(e, cardKey)}
+                                                    className={`text-xs font-medium px-2.5 py-1 rounded-full flex items-center gap-1 ${STATUS_STYLE[app.status]}`}
+                                                >
+                                                    {STATUS_LABEL[app.status]}
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+                                                {openStatusId === cardKey && (
+                                                    <div
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="absolute right-0 mt-1 w-28 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-20 overflow-hidden"
+                                                    >
+                                                        {STATUS_ORDER.map((st) => (
+                                                            <button
+                                                                key={st}
+                                                                onClick={(e) => changeStatus(e, app.id, st)}
+                                                                className={`w-full text-left text-xs px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 ${
+                                                                    st === app.status ? 'font-semibold text-blue-500' : 'text-gray-700 dark:text-gray-300'
+                                                                }`}
+                                                            >
+                                                                {STATUS_LABEL[st]}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {app.deadline && (
+                                                <span className="text-xs text-red-400">⏰ 마감 {app.deadline}</span>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLE[app.status]}`}>
-                      {STATUS_LABEL[app.status]}
-                    </span>
-                                        {app.deadline && (
-                                            <span className="text-xs text-red-400">⏰ 마감 {app.deadline}</span>
-                                        )}
-                                    </div>
-                                </div>
 
-                                <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs">
-                                    <span className="text-blue-500">📨 지원 {app.appliedDate || '-'}</span>
-                                    <span className="text-green-500">
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs">
+                                        <span className="text-blue-500">📨 지원 {app.appliedDate || '-'}</span>
+                                        <span className="text-green-500">
                     🎤 {app.interviewDate || '-'}
-                                        {app.interviewTime ? ` ${app.interviewTime.slice(0, 5)}` : ''}
+                                            {app.interviewTime ? ` ${app.interviewTime.slice(0, 5)}` : ''}
                   </span>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 )}
             </div>
