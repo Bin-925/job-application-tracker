@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import { getNotifications } from '../utils/notifications'
+import InterviewScheduleModal from '../components/InterviewScheduleModal'
 
 const STATUS_LABEL = {
     TO_APPLY: '지원예정',
@@ -48,7 +49,8 @@ export default function HomePage() {
     const [search, setSearch] = useState('')
     const [sortKey, setSortKey] = useState('appliedDate')
     const [sortDesc, setSortDesc] = useState(true)
-    const [openStatusId, setOpenStatusId] = useState(null)  // 어떤 카드의 상태 메뉴가 열렸나
+    const [openStatusId, setOpenStatusId] = useState(null)
+    const [interviewModalApp, setInterviewModalApp] = useState(null)  // 면접 모달 대상
 
     const fetchData = async () => {
         try {
@@ -68,28 +70,55 @@ export default function HomePage() {
         fetchData()
     }, [])
 
-    // 상태 변경 (배지에서 선택 시)
+    // 상태 변경
     const changeStatus = async (e, appId, newStatus) => {
-        e.stopPropagation()           // 카드 클릭(캘린더 이동) 막기
-        setOpenStatusId(null)         // 메뉴 닫기
-        // 화면 먼저 갱신 (낙관적 업데이트) — 반응이 빨라 보임
+        e.stopPropagation()
+        setOpenStatusId(null)
         setApplications((prev) =>
             prev.map((app) => (app.id === appId ? { ...app, status: newStatus } : app)))
         try {
             await api.patch(`/applications/${appId}/status`, { status: newStatus })
-            // 통계도 다시 불러오기 (상단 카운트 갱신)
             const statRes = await api.get('/applications/stats')
             setStats(statRes.data)
         } catch {
-            // 실패하면 데이터 다시 불러와서 되돌림
             fetchData()
         }
     }
 
-    // 배지 탭 (메뉴 열기/닫기)
     const toggleStatusMenu = (e, appId) => {
-        e.stopPropagation()           // 카드 클릭 막기
+        e.stopPropagation()
         setOpenStatusId(openStatusId === appId ? null : appId)
+    }
+
+    // 면접 일정 모달 열기
+    const openInterviewModal = (e, app) => {
+        e.stopPropagation()
+        setInterviewModalApp(app)
+    }
+
+    // 면접 일정 저장 (PUT - 전체 수정에서 면접일/시간만 변경)
+    const saveInterview = async ({ interviewDate, interviewTime }) => {
+        const app = interviewModalApp
+        // 화면 먼저 갱신 (낙관적)
+        setApplications((prev) =>
+            prev.map((a) => (a.id === app.id ? { ...a, interviewDate, interviewTime } : a)))
+        try {
+            await api.put(`/applications/${app.id}`, {
+                company: app.company,
+                position: app.position,
+                status: app.status,
+                appliedDate: app.appliedDate,
+                deadline: app.deadline || null,
+                interviewDate: interviewDate,
+                interviewTime: interviewTime,
+                link: app.link || null,
+                memo: app.memo || null,
+            })
+        } catch {
+            fetchData()  // 실패 시 되돌림
+        } finally {
+            setInterviewModalApp(null)  // 모달 닫기
+        }
     }
 
     const inProgress = (stats.APPLIED || 0) + (stats.DOC_PASSED || 0) + (stats.INTERVIEW || 0)
@@ -252,7 +281,6 @@ export default function HomePage() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
                                             </svg>
                                         </button>
-                                        {/* 상태 선택 드롭다운 */}
                                         {openStatusId === app.id && (
                                             <div
                                                 onClick={(e) => e.stopPropagation()}
@@ -280,14 +308,27 @@ export default function HomePage() {
 
                             <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs">
                                 <span className="text-blue-500">📨 지원 {app.appliedDate || '-'}</span>
-                                <span className="text-green-500">
-                  🎤 {app.interviewDate || '-'}
+                                {/* 면접일/시간 (탭하면 모달) */}
+                                <button
+                                    onClick={(e) => openInterviewModal(e, app)}
+                                    className="text-green-500 hover:underline"
+                                >
+                                    🎤 {app.interviewDate || '일정 추가'}
                                     {app.interviewTime ? ` ${app.interviewTime.slice(0, 5)}` : ''}
-                </span>
+                                </button>
                             </div>
                         </div>
                     ))}
                 </div>
+            )}
+
+            {/* 면접 일정 모달 */}
+            {interviewModalApp && (
+                <InterviewScheduleModal
+                    app={interviewModalApp}
+                    onClose={() => setInterviewModalApp(null)}
+                    onSave={saveInterview}
+                />
             )}
         </div>
     )

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api/client'
+import InterviewScheduleModal from '../components/InterviewScheduleModal'
 
 const STATUS_LABEL = {
     TO_APPLY: '지원예정', APPLIED: '지원완료', DOC_PASSED: '서류합격',
@@ -33,39 +34,66 @@ export default function CalendarPage() {
     const [applications, setApplications] = useState([])
     const [current, setCurrent] = useState(initDate)
     const [selected, setSelected] = useState(dateParam || todayKey)
-    const [openStatusId, setOpenStatusId] = useState(null)  // 상태 메뉴 열린 카드 (고유키)
+    const [openStatusId, setOpenStatusId] = useState(null)
+    const [interviewModalApp, setInterviewModalApp] = useState(null)
+
+    const fetchApps = async () => {
+        try {
+            const res = await api.get('/applications')
+            setApplications(res.data)
+        } catch {}
+    }
 
     useEffect(() => {
-        const fetch = async () => {
-            try {
-                const res = await api.get('/applications')
-                setApplications(res.data)
-            } catch {}
-        }
-        fetch()
+        fetchApps()
     }, [])
 
     // 상태 변경
     const changeStatus = async (e, appId, newStatus) => {
         e.stopPropagation()
         setOpenStatusId(null)
-        // 원본 applications 갱신 → 캘린더의 모든 표시가 자동 반영됨
         setApplications((prev) =>
             prev.map((app) => (app.id === appId ? { ...app, status: newStatus } : app)))
         try {
             await api.patch(`/applications/${appId}/status`, { status: newStatus })
         } catch {
-            // 실패 시 다시 불러와 되돌림
-            try {
-                const res = await api.get('/applications')
-                setApplications(res.data)
-            } catch {}
+            fetchApps()
         }
     }
 
     const toggleStatusMenu = (e, key) => {
         e.stopPropagation()
         setOpenStatusId(openStatusId === key ? null : key)
+    }
+
+    // 면접 일정 모달 열기
+    const openInterviewModal = (e, app) => {
+        e.stopPropagation()
+        setInterviewModalApp(app)
+    }
+
+    // 면접 일정 저장 (PUT)
+    const saveInterview = async ({ interviewDate, interviewTime }) => {
+        const app = interviewModalApp
+        setApplications((prev) =>
+            prev.map((a) => (a.id === app.id ? { ...a, interviewDate, interviewTime } : a)))
+        try {
+            await api.put(`/applications/${app.id}`, {
+                company: app.company,
+                position: app.position,
+                status: app.status,
+                appliedDate: app.appliedDate,
+                deadline: app.deadline || null,
+                interviewDate: interviewDate,
+                interviewTime: interviewTime,
+                link: app.link || null,
+                memo: app.memo || null,
+            })
+        } catch {
+            fetchApps()
+        } finally {
+            setInterviewModalApp(null)
+        }
     }
 
     const year = current.getFullYear()
@@ -224,10 +252,14 @@ export default function CalendarPage() {
 
                                     <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 text-xs">
                                         <span className="text-blue-500">📨 지원 {app.appliedDate || '-'}</span>
-                                        <span className="text-green-500">
-                    🎤 {app.interviewDate || '-'}
+                                        {/* 면접일/시간 (탭하면 모달) */}
+                                        <button
+                                            onClick={(e) => openInterviewModal(e, app)}
+                                            className="text-green-500 hover:underline"
+                                        >
+                                            🎤 {app.interviewDate || '일정 추가'}
                                             {app.interviewTime ? ` ${app.interviewTime.slice(0, 5)}` : ''}
-                  </span>
+                                        </button>
                                     </div>
                                 </div>
                             )
@@ -235,6 +267,15 @@ export default function CalendarPage() {
                     </div>
                 )}
             </div>
+
+            {/* 면접 일정 모달 */}
+            {interviewModalApp && (
+                <InterviewScheduleModal
+                    app={interviewModalApp}
+                    onClose={() => setInterviewModalApp(null)}
+                    onSave={saveInterview}
+                />
+            )}
         </div>
     )
 }
