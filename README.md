@@ -199,44 +199,26 @@ erDiagram
 
 ## 📁 프로젝트 구조
 job-application-tracker/
-
-├── backend/                         # Spring Boot REST API
-
-│   └── src/main/java/com/bin/jobtracker/
-
-│       ├── config/                  # Security · CORS · Swagger 설정
-
-│       ├── controller/              # REST 컨트롤러
-
-│       ├── dto/                     # 요청/응답 DTO
-
-│       ├── entity/                  # JPA 엔티티
-
-│       ├── enums/                   # 상태·출처 enum
-
-│       ├── exception/               # 커스텀 예외 · 핸들러
-
-│       ├── repository/              # JPA 레포지토리
-
-│       ├── security/                # JWT 필터 · 토큰 provider
-
-│       └── service/                 # 비즈니스 로직
-
 │
-
-└── frontend/                        # React SPA
-
+├── backend/          # Spring Boot REST API
+│   └── src/main/java/com/bin/jobtracker/
+│       ├── config/          (Security · CORS · Swagger 설정)
+│       ├── controller/      (REST 컨트롤러)
+│       ├── dto/             (요청 / 응답 DTO)
+│       ├── entity/          (JPA 엔티티)
+│       ├── enums/           (상태 · 출처 enum)
+│       ├── exception/       (커스텀 예외 · 핸들러)
+│       ├── repository/      (JPA 레포지토리)
+│       ├── security/        (JWT 필터 · 토큰 provider)
+│       └── service/         (비즈니스 로직)
+│
+└── frontend/         # React SPA
 └── src/
-
-├── api/                     # axios 클라이언트
-
-├── store/                   # 토큰 관리
-
-├── components/layout/       # 레이아웃 · 탭바 · 폰 프레임
-
-├── utils/                   # 알림 등 유틸
-
-└── pages/                   # 화면 (홈·캘린더·지원·마이페이지 등)
+├── api/              (axios 클라이언트)
+├── store/            (토큰 관리)
+├── components/       (레이아웃 · 탭바 · 폰 프레임)
+├── utils/            (알림 등 유틸)
+└── pages/            (화면: 홈 · 캘린더 · 지원 · 마이페이지 등)
 
 <br/>
 
