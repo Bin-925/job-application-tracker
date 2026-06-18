@@ -196,8 +196,9 @@ erDiagram
 > 🚧 **개발 예정** — 채용정보 API 연동(공고 검색 후 원클릭 등록) · 푸시 알림 · 플레이스토어 출시
 
 <br/>
-'''
+
 ## 📁 프로젝트 구조
+```
 job-application-tracker/
 │
 ├── backend/          # Spring Boot REST API
@@ -219,7 +220,7 @@ job-application-tracker/
 ├── components/       (레이아웃 · 탭바 · 폰 프레임)
 ├── utils/            (알림 등 유틸)
 └── pages/            (화면: 홈 · 캘린더 · 지원 · 마이페이지 등)
-'''
+```
 <br/>
 
 ## ⚙️ 로컬 실행
