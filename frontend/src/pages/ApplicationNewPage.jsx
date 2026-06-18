@@ -38,6 +38,12 @@ export default function ApplicationNewPage() {
         if (!form.company.trim()) e.company = '회사명을 입력해주세요.'
         if (!form.position.trim()) e.position = '포지션을 입력해주세요.'
         if (!form.appliedDate) e.appliedDate = '지원일을 입력해주세요.'
+        // 마감일은 지원일 이후여야 함
+        if (form.deadline && form.appliedDate && form.deadline < form.appliedDate)
+            e.deadline = '마감일은 지원일 이후로 선택해주세요.'
+        // 면접일은 지원일 이후여야 함
+        if (form.interviewDate && form.appliedDate && form.interviewDate < form.appliedDate)
+            e.interviewDate = '면접일은 지원일 이후로 선택해주세요.'
         return e
     }
 
@@ -133,9 +139,11 @@ export default function ApplicationNewPage() {
                     <div className={`${fieldClass} flex items-center px-4 py-3 cursor-pointer`}
                          onClick={() => openPicker('deadline')}>
                         <input id="deadline" type="date" name="deadline"
+                               min={form.appliedDate || undefined}
                                value={form.deadline} onChange={onChange}
                                className="flex-1 bg-transparent text-sm outline-none cursor-pointer" />
                     </div>
+                    {errors.deadline && <p className="text-xs text-red-500">{errors.deadline}</p>}
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -143,9 +151,11 @@ export default function ApplicationNewPage() {
                     <div className={`${fieldClass} flex items-center px-4 py-3 cursor-pointer`}
                          onClick={() => openPicker('interviewDate')}>
                         <input id="interviewDate" type="date" name="interviewDate"
+                               min={form.appliedDate || undefined}
                                value={form.interviewDate} onChange={onChange}
                                className="flex-1 bg-transparent text-sm outline-none cursor-pointer" />
                     </div>
+                    {errors.interviewDate && <p className="text-xs text-red-500">{errors.interviewDate}</p>}
                 </div>
 
                 {/* 면접 시간 */}
