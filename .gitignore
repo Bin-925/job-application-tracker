@@ -40,3 +40,5 @@ out/
 application-secret.yml
 replacements.txt
 bfg-*.jar
+
+.vercel

@@ -41,7 +41,8 @@ export default function JoinPage() {
         setUsernameStatus('checking')
         setErrors({ ...errors, username: '', usernameCheck: '' })
         try {
-            await axios.get(`http://localhost:8080/api/v1/members/check-username?username=${form.username}`)
+            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'
+            await axios.get(`${API_BASE}/members/check-username?username=${form.username}`)
             setUsernameStatus('available')
         } catch {
             setUsernameStatus('taken')
