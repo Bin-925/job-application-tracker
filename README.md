@@ -78,19 +78,22 @@
 
 <br/>
 
-## 🏗️ 시스템 아키텍처
+## 시스템 아키텍처
 
-```mermaid
-flowchart LR
-    U["👤 사용자"] --> V["VercelReact SPA (Vite)"]
-    V -->|"HTTP / JSON · JWT"| R["RailwaySpring Boot REST API"]
-    R --> DB[("PostgreSQL")]
-```
+### 런타임 구조
+프론트엔드(Vercel)에서 백엔드(Railway)를 거쳐 PostgreSQL까지 이어지는 요청 흐름입니다.
 
-- React SPA(Vercel) ↔ Spring Boot REST API(Railway)가 HTTP(JSON)로 통신
-- 모든 요청은 **JWT 토큰** 기반 인증 (Authorization 헤더)
-- **환경 분리**: 로컬 개발은 MySQL · 운영 배포는 PostgreSQL · 테스트는 H2
-- 모노레포 구조: `backend/` (Spring Boot) + `frontend/` (React)
+![런타임 아키텍처](docs/runtime-architecture.png)
+
+### CI/CD 파이프라인
+GitHub에 push하면 Vercel과 Railway가 각각 자동으로 빌드·배포합니다.
+
+![CI/CD 파이프라인](docs/cicd-pipeline.png)
+
+### 주요 데이터 흐름
+인증, 지원 등록, 목록 조회, 상태 변경 네 가지 핵심 시나리오의 전체 처리 과정입니다.
+
+![데이터 흐름](docs/data-flow.png)
 
 <br/>
 
