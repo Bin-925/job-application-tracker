@@ -129,7 +129,7 @@ React(Vercel 또는 EC2) ──▶ Spring Boot(EC2, Docker) ──▶ PostgreSQL
 | ✅ | 지원 현황 CRUD, 상태 관리, 소유권 기반 인가 |
 | ✅ | 캘린더, 통계 대시보드, 인앱 알림 |
 | ✅ | Vercel + Railway 1차 배포 |
-| ✅ | 비밀번호 확인 필드, 로고, 스플래시 화면 |
+| 🚧 | 비밀번호 확인 필드, 로고, 스플래시 화면 |
 | 🚧 | AWS EC2 + Docker + GitHub Actions 셀프 호스트 러너 전환 |
 | 🚧 | 워크넷 채용정보 API 연동 (공고 검색 → 원클릭 등록) |
 | 🚧 | PWA 설치 지원, APK 직접 배포(GitHub Releases) |
