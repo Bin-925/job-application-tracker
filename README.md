@@ -16,6 +16,9 @@
 
 ## 📑 문서
 
+📋 [PRD](PRD.md) · 프로젝트 기획 및 요구사항 정의
+&nbsp;
+
 🧪 [테스트 케이스](docs/TEST_CASES.md) · 테스트 검증 내역
 &nbsp;
 
