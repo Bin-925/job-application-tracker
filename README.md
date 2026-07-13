@@ -20,6 +20,9 @@
 &nbsp;
 
 🔧 [트러블슈팅](TROUBLESHOOTING.md) · 개발 중 마주친 문제와 해결 과정
+&nbsp;
+
+🤖 [AI 협업 기록](AI_COLLABORATION.md) · AI 코딩 툴 활용 내역
 
 </div>
 
