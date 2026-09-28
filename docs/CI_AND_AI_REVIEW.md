@@ -35,9 +35,18 @@ flowchart LR
 1. Google AI Studio에서 Gemini API 키를 발급한다. 키를 코드·채팅·PR에 붙여 넣지 않는다.
 2. GitHub 저장소의 Settings → Secrets and variables → Actions → New repository secret에서 이름을 `GEMINI_API_KEY`로 등록한다.
 3. 해당 Google 프로젝트의 모델 접근 권한, 할당량, 결제 설정을 확인한다. API 사용 비용이 발생할 수 있다.
-4. 실패한 Gemini 작업을 Re-run failed jobs로 다시 실행한다. 설정 파일이 main에 병합된 이후에는 Run workflow에서 PR 번호로 수동 실행할 수도 있다.
+4. 실제 코드 변경이 있는 같은 저장소의 열린 PR에서 실행 결과를 확인한다. 실패한 작업은 설정 수정 후 Re-run failed jobs로 다시 실행할 수 있다. 이미 병합된 PR은 검토를 건너뛴다. 설정 파일이 main에 병합된 이후에는 Run workflow에서 PR 번호로 수동 실행할 수도 있다.
 
 기본 모델은 `gemini-3.8-flash`다. Repository variable `GEMINI_REVIEW_MODEL`로 지원 모델을 변경할 수 있다. API 키가 없으면 명시적으로 실패하며, 리뷰한 것처럼 성공 처리하지 않는다.
+
+## 실제 연결 검증 (2026-09-28)
+
+- 사용자가 Repository secret을 등록한 뒤 [PR #27](https://github.com/Bin-925/job-application-tracker/pull/27)에서 실제 API 호출을 검증했다. 키 값은 로컬로 가져오거나 출력하지 않았다.
+- [Gemini Actions 실행](https://github.com/Bin-925/job-application-tracker/actions/runs/36395520391)이 성공했고, [한국어 COMMENT 리뷰](https://github.com/Bin-925/job-application-tracker/pull/27#pullrequestreview-5335645074)가 게시됐다. 검토 대상은 소스 변경 2개 파일, diff 2,985자였으며 지적 사항은 0개였다.
+- 지적 사항이 없었으므로 이번 실호출에서는 줄별 댓글이 생성되지 않았다. 추가 줄 검증과 줄별 댓글 게시 인자는 모의 테스트로 확인하며, 이번 결과를 실제 줄별 댓글 게시 검증으로 간주하지 않는다.
+- 성공한 작업 요약에 사용 모델을 표시한다. HTTP 400/401/403/404/429/500/503 오류에는 점검 안내를 제공하지만 API 오류 응답 본문과 키는 로그에 출력하지 않는다.
+- 성공은 해당 시점의 API 접근과 리뷰 게시가 가능했다는 뜻이다. 무료 요금제, 남은 할당량, 실제 청구 금액이나 코드의 무결성을 보증하지 않는다. 사용량과 결제 내역은 Google AI Studio/연결된 Cloud 프로젝트에서 별도로 확인해야 한다.
+- 자동 재시도는 하지 않는다. 새 커밋은 새 호출 대상이며, 동일 커밋에 봇 리뷰가 게시된 후 재실행하면 중복 호출을 건너뛴다.
 
 ## 권한과 데이터 흐름
 
@@ -56,7 +65,6 @@ flowchart LR
 
 | 순서 | 남은 일 | 완료 기준 |
 |---|---|---|
-| 1 | CI와 PR 리뷰 연결 | 현재 PR의 CI 성공, 실제 Gemini 리뷰 게시 확인 |
 | 2 | 운영 PostgreSQL 이전 준비 | 실제 기존 스키마 비교, 백업, 별도 환경에서 복원·이전·롤백 리허설 |
 | 3 | HTTPS 스테이징 | 같은 origin, Secure 쿠키, 프록시 IP 신뢰 설정, Galaxy S25 Ultra 실기기 검증 |
 | 4 | PWA 업데이트 보호 실기기 검증 | #19에서 브라우저 기반 보호·회귀 검사 구현. S25 Ultra 종료·복귀·설치 환경 검증은 남음 |
@@ -78,4 +86,4 @@ flowchart LR
 - [Gemini API 시작과 REST 응답 구조](https://ai.google.dev/gemini-api/docs/get-started)
 - [Interactions API](https://ai.google.dev/api/interactions-api)
 
-이 문서의 연결 방법과 실제 실행 성공 여부는 구분한다. 키 미등록 상태에서는 코드와 모의 테스트만 검증할 수 있다.
+연결 방법, 모의 테스트, 실제 API 실행 결과는 구분한다. 실제 연결 근거는 위 실행 및 리뷰 링크로 확인할 수 있다.

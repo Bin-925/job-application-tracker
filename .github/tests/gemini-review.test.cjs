@@ -31,10 +31,13 @@ async function execute(options = {}) {
   const fetch = async (url, init) => {
     requests.push({ url, ...init, body: JSON.parse(init.body) });
     return { ok: options.httpStatus === undefined, status: options.httpStatus,
-      json: async () => options.response || { status: 'completed', steps: [
+      json: async () => {
+        if (options.httpStatus !== undefined) throw new Error('Error response body must not be read.');
+        return options.response || { status: 'completed', steps: [
         { type: 'thought', signature: 'not-output' },
         { type: 'model_output', content: [{ type: 'text', text: JSON.stringify(options.result || { summary: 'Review', findings: [finding] }) }] },
-      ] },
+        ] };
+      },
     };
   };
   await run(github, { repo: { owner: 'owner', repo: 'repo' } }, core, fetch, {
