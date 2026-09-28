@@ -31,12 +31,25 @@ dependencies {
 	implementation 'org.springframework.session:spring-session-jdbc'
 	implementation 'com.bucket4j:bucket4j_jdk17-core:8.18.0'
 	implementation 'com.github.ben-manes.caffeine:caffeine'
+	implementation 'org.flywaydb:flyway-core'
+	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql'
 	testImplementation 'org.springframework.security:spring-security-test'
 	// Swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
 }
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform { excludeTags 'postgres' }
+}
+
+tasks.register('postgresTest', Test) {
+	description = 'Runs Flyway and session integration tests against disposable PostgreSQL containers.'
+	group = 'verification'
+	testClassesDirs = sourceSets.test.output.classesDirs
+	classpath = sourceSets.test.runtimeClasspath
+	useJUnitPlatform { includeTags 'postgres' }
+	shouldRunAfter tasks.named('test')
 }
 
 // The Windows Java launcher reads argument files using the native code page.
