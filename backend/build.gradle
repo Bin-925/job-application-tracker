@@ -29,6 +29,8 @@ dependencies {
 	// Password hashing and JDBC-backed sessions
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.session:spring-session-jdbc'
+	implementation 'com.bucket4j:bucket4j_jdk17-core:8.18.0'
+	implementation 'com.github.ben-manes.caffeine:caffeine'
 	testImplementation 'org.springframework.security:spring-security-test'
 	// Swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.14'
@@ -49,7 +51,7 @@ if (System.getProperty('os.name').toLowerCase().contains('windows')) {
                     .collect { it.toURI().toASCIIString() }.join(' '))
         }
     }
-    tasks.named('test') {
+	tasks.withType(Test).configureEach {
         dependsOn testClasspathJar
         inputs.files(sourceSets.test.runtimeClasspath).withPropertyName('runtimeClasspathContents')
         classpath = files(testClasspathJar.flatMap { it.archiveFile })

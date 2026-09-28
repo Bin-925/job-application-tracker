@@ -8,6 +8,17 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(RateLimitException.class)
+    public ResponseEntity<?> handleRateLimit(RateLimitException error) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", Long.toString(error.getRetryAfterSeconds()))
+                .body(Map.of("status", 429, "message", error.getMessage()));
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleUnreadableBody(Exception error) {
+        return build(HttpStatus.BAD_REQUEST, "요청 형식을 확인해 주세요.");
+    }
 
     @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
     public ResponseEntity<?> handleCredentials(Exception e) {

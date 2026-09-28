@@ -4,6 +4,11 @@ import com.bin.jobtracker.repository.MemberRepository;
 import com.bin.jobtracker.security.SessionPrincipal;
 import com.bin.jobtracker.security.SessionValidityFilter;
 import com.bin.jobtracker.service.MemberService;
+import com.bin.jobtracker.security.AuthRateLimiter;
+import com.bin.jobtracker.security.AuthRateLimitProperties;
+import com.bin.jobtracker.security.ApiRequestGuardFilter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,6 +36,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
 
 @Configuration
+@EnableConfigurationProperties(AuthRateLimitProperties.class)
 public class SecurityConfig {
     @Bean
     BCryptPasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
@@ -71,7 +77,8 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http, MemberRepository members,
-            SecurityContextRepository contexts, CsrfTokenRepository csrf) throws Exception {
+            SecurityContextRepository contexts, CsrfTokenRepository csrf, AuthRateLimiter limiter,
+            ObjectMapper json, @Value("${app.request.max-body-bytes:32768}") int maxBodyBytes) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(config -> config.csrfTokenRepository(csrf))
                 .securityContext(config -> config.securityContextRepository(contexts).requireExplicitSave(true))
@@ -98,6 +105,7 @@ public class SecurityConfig {
                             response.setContentType("application/json;charset=UTF-8");
                             response.getWriter().write("{\"status\":403,\"message\":\"요청을 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.\"}");
                         }))
+                .addFilterBefore(new ApiRequestGuardFilter(limiter, json, maxBodyBytes), CsrfFilter.class)
                 .addFilterAfter(new SessionValidityFilter(members), CsrfFilter.class);
         return http.build();
     }
@@ -111,6 +119,7 @@ public class SecurityConfig {
         config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Content-Type", "X-CSRF-TOKEN"));
+        config.setExposedHeaders(List.of("Retry-After"));
         config.setAllowCredentials(true);
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
