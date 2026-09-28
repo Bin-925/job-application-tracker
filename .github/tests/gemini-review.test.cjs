@@ -31,10 +31,13 @@ async function execute(options = {}) {
   const fetch = async (url, init) => {
     requests.push({ url, ...init, body: JSON.parse(init.body) });
     return { ok: options.httpStatus === undefined, status: options.httpStatus,
-      json: async () => options.response || { status: 'completed', steps: [
+      json: async () => {
+        if (options.httpStatus !== undefined) throw new Error('Error response body must not be read.');
+        return options.response || { status: 'completed', steps: [
         { type: 'thought', signature: 'not-output' },
         { type: 'model_output', content: [{ type: 'text', text: JSON.stringify(options.result || { summary: 'Review', findings: [finding] }) }] },
-      ] },
+        ] };
+      },
     };
   };
   await run(github, { repo: { owner: 'owner', repo: 'repo' } }, core, fetch, {
@@ -126,4 +129,19 @@ test('API failures and malformed model output do not publish a review', async ()
 
 test('PR number input cannot become shell or script instructions', async () => {
   await assert.rejects(execute({ number: '1; echo unsafe' }), /positive pull request/);
+});
+
+test('API failures provide actionable guidance without reading the response body', async () => {
+  for (const [status, hint] of [
+    [400, 'request format'], [401, 'API key secret'], [403, 'key restrictions'],
+    [404, 'model availability'], [429, 'quota and billing'], [500, 'Provider error'],
+    [503, 'Provider unavailable'], [502, 'API access and configuration'],
+  ]) {
+    await assert.rejects(execute({ httpStatus: status }), error => {
+      assert.match(error.message, new RegExp(`HTTP ${status}`));
+      assert.ok(error.message.includes(hint));
+      assert.ok(!error.message.includes('test-only'));
+      return true;
+    });
+  }
 });
