@@ -20,7 +20,7 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'    // 로컬 실행용 MySQL
 	runtimeOnly 'org.postgresql:postgresql'       // 배포용 PostgreSQL
-	testRuntimeOnly 'com.h2database:h2'            // 테스트용 H2
+	runtimeOnly 'com.h2database:h2'                // 테스트 및 명시적 demo 프로파일 전용
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testCompileOnly 'org.projectlombok:lombok'
@@ -36,4 +36,23 @@ dependencies {
 }
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// The Windows Java launcher reads argument files using the native code page.
+// A manifest classpath preserves Unicode checkout paths using URI encoding.
+if (System.getProperty('os.name').toLowerCase().contains('windows')) {
+    def testClasspathJar = tasks.register('testClasspathJar', Jar) {
+        dependsOn testClasses
+        destinationDirectory = file("${gradle.gradleUserHomeDir}/jobtracker-classpaths/${projectDir.absolutePath.hashCode()}")
+        archiveFileName = 'test-classpath.jar'
+        doFirst {
+            manifest.attributes('Class-Path': sourceSets.test.runtimeClasspath.files
+                    .collect { it.toURI().toASCIIString() }.join(' '))
+        }
+    }
+    tasks.named('test') {
+        dependsOn testClasspathJar
+        inputs.files(sourceSets.test.runtimeClasspath).withPropertyName('runtimeClasspathContents')
+        classpath = files(testClasspathJar.flatMap { it.archiveFile })
+    }
 }

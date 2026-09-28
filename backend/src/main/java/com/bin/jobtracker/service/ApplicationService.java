@@ -50,9 +50,13 @@ public class ApplicationService {
     @Transactional
     public Application update(Long memberId, Long applicationId, ApplicationUpdateRequest req) {
         Application app = findOwned(memberId, applicationId);
+        if (!java.util.Objects.equals(req.version(), app.getVersion())) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(Application.class, applicationId);
+        }
         app.update(req.company(), req.position(), req.status(),
                 req.appliedDate(), req.deadline(), req.interviewDate(), req.interviewTime(),
                 req.link(), req.memo());
+        applicationRepository.flush();
         return app;
     }
 
@@ -60,6 +64,64 @@ public class ApplicationService {
     public Application changeStatus(Long memberId, Long applicationId, ApplicationStatus status) {
         Application app = findOwned(memberId, applicationId);
         app.changeStatus(status);
+        return app;
+    }
+
+    @Transactional
+    public Application changeStatus(Long memberId, Long applicationId,
+            com.bin.jobtracker.dto.StatusUpdateRequest request) {
+        Application app = findOwned(memberId, applicationId);
+        if (request.status() != ApplicationStatus.TO_APPLY && app.getAppliedDate() == null) {
+            if (request.appliedDate() == null) throw new IllegalArgumentException("지원일을 입력해 주세요.");
+            app.recordAppliedDate(request.appliedDate());
+        }
+        app.changeStatus(request.status());
+        applicationRepository.flush();
+        return app;
+    }
+
+    @Transactional
+    public Application addSchedule(Long memberId, Long applicationId,
+            com.bin.jobtracker.dto.ScheduleRequest request) {
+        Application app = findOwned(memberId, applicationId);
+        app.getSchedules().add(new com.bin.jobtracker.entity.ScheduleEvent(app, request));
+        applicationRepository.flush();
+        return app;
+    }
+
+    @Transactional
+    public Application updateSchedule(Long memberId, Long applicationId, Long scheduleId,
+            com.bin.jobtracker.dto.ScheduleRequest request) {
+        Application app = findOwned(memberId, applicationId);
+        var event = app.getSchedules().stream().filter(e -> e.getId().equals(scheduleId)).findFirst()
+                .orElseThrow(() -> new NotFoundException("일정을 찾을 수 없습니다."));
+        if (!java.util.Objects.equals(request.version(), event.getVersion())) {
+            throw new org.springframework.orm.ObjectOptimisticLockingFailureException(
+                    com.bin.jobtracker.entity.ScheduleEvent.class, scheduleId);
+        }
+        event.update(request);
+        applicationRepository.flush();
+        return app;
+    }
+
+    @Transactional
+    public void deleteSchedule(Long memberId, Long applicationId, Long scheduleId) {
+        Application app = findOwned(memberId, applicationId);
+        if (!app.getSchedules().removeIf(e -> e.getId().equals(scheduleId))) {
+            throw new NotFoundException("일정을 찾을 수 없습니다.");
+        }
+    }
+
+    @Transactional
+    public Application replaceLegacySchedule(Long memberId, Long applicationId,
+            com.bin.jobtracker.entity.ScheduleEvent.Type type,
+            com.bin.jobtracker.dto.ScheduleRequest request) {
+        Application app = findOwned(memberId, applicationId);
+        app.clearLegacySchedule(type);
+        if (request != null) {
+            app.getSchedules().add(new com.bin.jobtracker.entity.ScheduleEvent(app, request));
+        }
+        applicationRepository.flush();
         return app;
     }
 
