@@ -1,281 +1,236 @@
-<!-- 이 README는 GitHub 레포 페이지에서 봐야 제대로 렌더링됩니다 (뱃지·표·다이어그램) -->
+# 취준노트
 
-> 2026-09 개발 브랜치: [현재 구현/실행/출시 전 점검](docs/IMPLEMENTATION_STATUS.md),
-> [기술 선택 이유](docs/adr/0001-workflow-and-pwa.md), [디자인 QA](design-qa.md).
-> 아래 라이브 데모와 기존 스크린샷은 이전 배포 버전이며, 이번 변경은 아직 운영에 배포하지 않았습니다.
-> 2026-09-24: 로컬 코드는 JWT 대신 JDBC 세션 인증을 사용합니다. 아래 기존 JWT 설명은 이전 버전 기준입니다. [전환 이유](docs/adr/0002-jdbc-session-auth.md) · [실행 및 배포 전 확인](docs/SESSION_AUTH_MIGRATION.md).
-> 2026-09-28: 작업별 이슈·PR을 `dev`로 통합하고 테스트를 검증했습니다. [협업 규칙](CONTRIBUTING.md) · [통합 결과와 학습 보충](docs/DEV_INTEGRATION_2026-09-28.md). `main` 운영 버전과 구분하며 Gemini 실제 리뷰는 API 키 등록 대기입니다.
+지원 기록, 채용 진행 상태, 면접·마감 일정을 관리하는 모바일 우선 웹/PWA 프로젝트입니다.
 
-<div align="center">
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:1e3a8a,100:38bdf8&height=200&section=header&text=취준노트&fontSize=60&fontColor=ffffff&fontAlignY=35&desc=구직%20지원%20현황%20관리%20·%20Full-Stack&descSize=20&descAlignY=58&animation=fadeIn" width="100%" />
-
-### 📒 취준노트 — 구직 지원 현황 트래커
 ![CI](https://github.com/Bin-925/job-application-tracker/actions/workflows/ci.yml/badge.svg?branch=dev)
 
-지원한 채용공고를 등록하고 **진행 상태**를 관리하는 풀스택 서비스입니다.
-
-`지원예정 → 지원완료 → 서류합격 → 면접 → 최종합격 / 불합격`
-
-**모바일 우선(Mobile-First)** 디자인 · 지원일·면접일·마감일을 **캘린더**에서 한눈에
-
-### 🔗 [▶ 라이브 데모](https://job-application-tracker-sand-two.vercel.app) &nbsp;·&nbsp; [📖 API 문서 (Swagger)](https://job-application-tracker-production-f244.up.railway.app/swagger-ui/index.html)
-
-## 📑 문서
-
-📋 [PRD](PRD.md) · 프로젝트 기획 및 요구사항 정의
-&nbsp;
-
-🧪 [테스트 케이스](docs/TEST_CASES.md) · 테스트 검증 내역
-&nbsp;
-
-🔧 [트러블슈팅](TROUBLESHOOTING.md) · 개발 중 마주친 문제와 해결 과정
-&nbsp;
-
-🤖 [AI 협업 기록](AI_COLLABORATION.md) · AI 코딩 툴 활용 내역
-
-</div>
-
-<br/>
-
-## 📱 스크린샷
-
-<div align="center">
-
-| 홈 (대시보드) | 캘린더 | 지원 상세 |
-|:--:|:--:|:--:|
-| <img src="docs/images/home.png" width="240"/> | <img src="docs/images/calendar.png" width="240"/> | <img src="docs/images/detail.png" width="240"/> |
-
-| 마이페이지 | 회원가입 | 로그인 |
-|:--:|:--:|:--:|
-| <img src="docs/images/mypage.png" width="240"/> | <img src="docs/images/join.png" width="240"/> | <img src="docs/images/login.png" width="240"/> |
-
-</div>
-
-<br/>
-
-## 🛠️ Tech Stack
-
-<div align="center">
-
-![Java](https://img.shields.io/badge/Java_21-007396?style=for-the-badge&logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot_3.5-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
-![Spring Security](https://img.shields.io/badge/Spring_Security_(JWT)-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white)
-![JPA](https://img.shields.io/badge/Spring_Data_JPA-59666C?style=for-the-badge&logo=hibernate&logoColor=white)
-
-![React](https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Tailwind](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
-![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
-![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
-![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)
-
-</div>
-
-<br/>
-
-| 분류 | 기술 |
-|------|------|
-| **Backend** | Java 21 · Spring Boot 3.5 |
-| **인증/인가** | Spring Security · JWT (BCrypt) |
-| **ORM** | Spring Data JPA (Hibernate) |
-| **Database** | PostgreSQL (운영) · MySQL (로컬) · H2 (테스트) |
-| **API 문서** | Swagger (springdoc-openapi) |
-| **Frontend** | React · Vite · Tailwind CSS · React Router · Axios |
-| **배포** | Vercel (프론트) · Railway (백엔드 · PostgreSQL) |
-| **CI** | GitHub Actions |
-| **빌드 도구** | Gradle · pnpm |
-
-<br/>
-
-## 시스템 아키텍처
-
-### 런타임 구조
-프론트엔드(Vercel)에서 백엔드(Railway)를 거쳐 PostgreSQL까지 이어지는 요청 흐름입니다.
-
-![런타임 아키텍처](docs/runtime-architecture.png)
-
-### CI/CD 파이프라인
-GitHub에 push하면 Vercel과 Railway가 각각 자동으로 빌드·배포합니다.
-
-![CI/CD 파이프라인](docs/cicd-pipeline.png)
-
-<br/>
-
-### ERD
-회원(Member)과 지원 현황(Application)은 1:N 관계입니다.
-
-![ERD](docs/erd.png)
-
-**Application.status — 진행 상태 (ApplicationStatus enum)**
-
-| 값 | 설명 |
-|----|------|
-| `TO_APPLY` | 지원예정 |
-| `APPLIED` | 지원완료 |
-| `DOC_PASSED` | 서류합격 |
-| `INTERVIEW` | 면접 |
-| `ACCEPTED` | 최종합격 |
-| `REJECTED` | 불합격 |
-
-<br/>
-
-### 주요 데이터 흐름
-인증, 지원 등록, 목록 조회, 상태 변경 네 가지 핵심 시나리오의 전체 처리 과정입니다.
-
-![데이터 흐름](docs/data-flow.png)
-
-<br/>
-
-## 📌 API 목록
-
-<details open>
-<summary><b>🔐 인증 / 회원 (Member)</b></summary>
-
-<br/>
-
-| Method | URL | 설명 | 인증 |
-|--------|-----|------|:--:|
-| `POST` | `/api/v1/members/join` | 회원가입 | ❌ |
-| `POST` | `/api/v1/members/login` | 로그인 (JWT 발급) | ❌ |
-| `GET` | `/api/v1/members/check-username` | 아이디 중복 확인 | ❌ |
-| `GET` | `/api/v1/members/me` | 내 정보 조회 | ✅ |
-| `PATCH` | `/api/v1/members/me/nickname` | 닉네임 수정 | ✅ |
-| `PATCH` | `/api/v1/members/me/avatar` | 아바타 수정 | ✅ |
-| `PATCH` | `/api/v1/members/me/password` | 비밀번호 변경 | ✅ |
-| `DELETE` | `/api/v1/members/me` | 회원 탈퇴 | ✅ |
-
-</details>
-
-<details>
-<summary><b>📋 지원 현황 (Application)</b></summary>
-
-<br/>
-
-> 모두 JWT 필요 · 본인 지원만 접근 가능
-
-| Method | URL | 설명 |
-|--------|-----|------|
-| `GET` | `/api/v1/applications` | 내 지원 목록 |
-| `GET` | `/api/v1/applications/{id}` | 단건 조회 |
-| `POST` | `/api/v1/applications` | 지원 등록 |
-| `PUT` | `/api/v1/applications/{id}` | 수정 |
-| `PATCH` | `/api/v1/applications/{id}/status` | 상태 변경 |
-| `DELETE` | `/api/v1/applications/{id}` | 삭제 |
-| `GET` | `/api/v1/applications/stats` | 상태별 통계 |
-
-</details>
-
-<br/>
-
-## ✨ 주요 기능
-
-| # | 기능 | 설명 |
-|:-:|------|------|
-| 1️⃣ | **JWT 인증** | 토큰 기반 로그인 · BCrypt 비밀번호 암호화 · 아이디 중복 확인 · 입력 유효성 검사 |
-| 2️⃣ | **지원 현황 관리** | 등록·조회·수정·삭제 + 진행 상태(지원예정→…→합격/불합격) 관리 |
-| 3️⃣ | **소유권 기반 인가** | 본인의 지원만 조회·수정·삭제 가능 (403/404 분기) |
-| 4️⃣ | **필터·정렬·검색** | 상태별 필터 · 지원일/마감일/면접일 정렬 · 회사명 검색 |
-| 5️⃣ | **캘린더** | 지원일·면접일·마감일을 월별 캘린더에 색상 점으로 표시 · 날짜별 일정 조회 |
-| 6️⃣ | **통계 대시보드** | 전체·진행 중·면접·최종합격 개수 집계 |
-| 7️⃣ | **인앱 알림** | 면접·마감 D-day 임박 일정 알림 |
-| 8️⃣ | **계정 관리** | 닉네임 수정 · 아바타(색상/이모지) 선택 · 비밀번호 변경 · 회원 탈퇴 |
-| 9️⃣ | **다크 모드** | 라이트/다크 테마 토글 (설정 유지) |
-
-> 🚧 **개발 예정** — 워크넷 채용정보 API 연동(공고 검색 후 원클릭 등록) · 푸시 알림 · PWA 설치 지원 · APK 직접 배포 (GitHub Releases)
+> **2026-09-28 현재 `dev` 기준입니다.** 핵심 기능·세션 인증·PWA·CI·Gemini 실제 리뷰 연결을 구현하고 검증했습니다. 운영 환경으로의 이번 버전 전환, Web Push, 원스토어 출시는 아직 완료하지 않았습니다.
 >
-> 채용 플랫폼 연동은 `JobSearchProvider` 인터페이스로 추상화해, 향후 다른 채용 API로도 손쉽게 확장 가능하도록 설계했습니다.
+> 배포는 예산 결정 전 보류합니다. Railway 통합을 우선 고려하고 이후 EC2에서 AWS 운영을 직접 학습하려는 방향입니다. 환경 생성·결제·이전 일정은 아직 확정하지 않았습니다.
 
-<br/>
+## 현재 화면
 
-## 📁 프로젝트 구조
+| 지원 목록 | 월간 캘린더 |
+|---|---|
+| ![지원 목록](docs/qa/2026-09-28-dev/desktop-applications.png) | ![모바일 월간 캘린더](docs/qa/2026-09-28-dev/calendar-360.png) |
+
+위 이미지는 개발 버전 QA 기록입니다. [기존 라이브 데모](https://job-application-tracker-sand-two.vercel.app)와 [기존 배포 API 문서](https://job-application-tracker-production-f244.up.railway.app/swagger-ui/index.html)는 이전 배포 기준으로, 현재 개발 코드의 화면·인증·API와 다를 수 있습니다.
+
+## 주요 기능
+
+| 기능 | 현재 구현 |
+|---|---|
+| 오늘 | 오늘·다가오는 일정, 진행 중·면접 예정 지원 수, 카드에서 필터 목록으로 이동 |
+| 지원 관리 | 회사·직무·지원일·메모·공고 주소 등록/수정/삭제, 상태 변경 |
+| 검색·필터 | 회사/직무 검색, 상태·진행 중·면접 예정 필터, 최근 지원순·회사명순 정렬, URL에 조건 보관 |
+| 복수 일정 | 지원별 여러 면접·마감 등록/수정/삭제, 예정·완료·취소, 이전 단일 날짜의 호환 표시와 변환 |
+| 월간 캘린더 | 이전/다음/오늘 이동, 날짜별 일정, 지원일·면접·마감 표시 선택. 지원일은 기본 숨김 |
+| 인증 | JDBC 세션 + HttpOnly 쿠키, 로그인 시 세션 ID 교체, CSRF 검사 |
+| 계정 관리 | 닉네임·비밀번호 변경, 현재/전체 로그아웃, 현재 비밀번호 재확인 후 탈퇴 |
+| 화면 | 모바일 하단 탐색·데스크톱 좌측 탐색, 라이트/다크 모드 |
+| PWA | manifest·설치 아이콘·서비스 워커·업데이트 안내, 정적 자산 캐시, API NetworkOnly |
+| 입력 보호 | 작성/저장 중 업데이트 보류, 취소 확인, 오프라인 저장 실패 후 입력 유지, 재연결 시 쓰기 자동 재전송 없음 |
+| 연결 복구 | 일시적인 세션 재확인 실패 시 폼 유지·저장 제한·재확인 제공. 401·계정 변경 시 이전 계정 화면 제거 |
+| 조회 일관성 | 여러 목록 조회가 겹쳐도 최신 요청의 성공·오류·로딩만 반영 |
+
+지원 상태: `TO_APPLY` → `APPLIED` → `DOC_PASSED` → `INTERVIEW` → `ACCEPTED` / `REJECTED`. 일반적인 흐름을 표현하며 모든 상태 이동을 강제하는 상태 머신은 아닙니다.
+
+**집계 기준:** 진행 중은 지원 완료·서류 합격·면접입니다. 면접 예정은 그중 미래의 예정 면접을 하나 이상 가진 **지원 건수**이며, 한 지원의 여러 면접을 중복 집계하지 않습니다.
+
+아바타 변경 API는 유지하지만 새 UI의 아바타 편집과 별도 인앱 알림 목록은 이식하지 않았습니다. 일정 표시를 Web Push 구현으로 간주하지 않습니다.
+
+## 기술과 선택 이유
+
+| 영역 | 사용 기술 | 선택 이유·한계 |
+|---|---|---|
+| 서버 | Java 21, Spring Boot 3.5, Spring Security | 기존 기반 유지, 검증·인증·트랜잭션을 일관되게 처리 |
+| 데이터 | JPA/Hibernate, PostgreSQL, Flyway | 객체와 관계형 데이터 연결, 편집 버전 충돌 처리, SQL 변경 이력 관리 |
+| 세션 | Spring Session JDBC, BCrypt | 기존 DB로 로그인 상태·폐기를 관리. 비밀번호는 해시 저장 |
+| 요청 방어 | Bucket4j, Caffeine | IP·계정·전체 인증 예산 제한과 메모리 상한. 단일 서버 기준 |
+| 프론트 | React, JavaScript, React Router, Axios | 기존 기반 유지, URL 필터와 공통 쿠키·CSRF 통신 규칙 |
+| UI | CSS custom properties, Lucide, date-fns | 테마·아이콘 통일, 날짜 계산을 라이브러리에 위임 |
+| PWA | Vite, vite-plugin-pwa, Workbox | 설치·정적 캐시·버전 교체 기반. 개인정보 API 캐시는 사용하지 않음 |
+| 테스트 | JUnit, Mockito, MockMvc, Testcontainers, Node test, Playwright | 로직·HTTP·실제 DB·브라우저를 나눠 검증 |
+| 협업 | GitHub Actions, Gemini API | CI 반복 검증과 보조 리뷰. AI가 승인·병합을 결정하지 않음 |
+| 도구 | Gradle, pnpm, sharp | 서버·프론트 빌드와 PNG 설치 아이콘 재생성 |
+
+현재 새 UI는 Tailwind를 사용하지 않고 JWT/localStorage 인증도 사용하지 않습니다. MySQL은 기존 개발 설정에 남아 있고 H2는 테스트·로컬 demo용입니다. PostgreSQL 테스트 성공과 기존 운영 DB 이전 성공은 별개입니다.
+
+선택의 근거와 대안: [핵심 흐름·PWA ADR](docs/adr/0001-workflow-and-pwa.md), [세션 인증 ADR](docs/adr/0002-jdbc-session-auth.md), [요청 제한·마이그레이션 ADR](docs/adr/0003-release-foundation.md).
+
+## 구조와 데이터 흐름
+
+```mermaid
+flowchart LR
+    U[웹 또는 설치형 PWA] --> F[React 화면]
+    F --> A[Axios: 쿠키와 CSRF]
+    A --> P[동일 출처 API 프록시]
+    P --> S[Spring Security]
+    S --> C[Controller와 DTO 검증]
+    C --> B[Service: 소유권과 업무 규칙]
+    B --> J[JPA Repository]
+    J --> D[(업무 DB)]
+    S --> T[(JDBC 세션 저장소)]
 ```
-job-application-tracker/
-│
-├── backend/          # Spring Boot REST API
-│   └── src/main/java/com/bin/jobtracker/
-│       ├── config/          (Security · CORS · Swagger 설정)
-│       ├── controller/      (REST 컨트롤러)
-│       ├── dto/             (요청 / 응답 DTO)
-│       ├── entity/          (JPA 엔티티)
-│       ├── enums/           (상태 · 출처 enum)
-│       ├── exception/       (커스텀 예외 · 핸들러)
-│       ├── repository/      (JPA 레포지토리)
-│       ├── security/        (JWT 필터 · 토큰 provider)
-│       └── service/         (비즈니스 로직)
-│
-└── frontend/         # React SPA
-    └── src/
-        ├── api/              (axios 클라이언트)
-        ├── store/            (토큰 관리)
-        ├── components/       (레이아웃 · 탭바 · 폰 프레임)
-        ├── utils/            (알림 등 유틸)
-        └── pages/            (화면: 홈 · 캘린더 · 지원 · 마이페이지 등)
+
+개발 프록시는 Vite 설정에 있습니다. 실제 배포에서는 별도 HTTPS·쿠키·프록시 검증이 필요하며 이 그림이 운영 배포 완료를 뜻하지 않습니다.
+
+```mermaid
+erDiagram
+    MEMBER ||--o{ APPLICATION : owns
+    APPLICATION ||--o{ SCHEDULE_EVENT : has
 ```
-<br/>
 
-## ⚙️ 로컬 실행
+회원 한 명이 여러 지원을 소유하고 지원 하나에 여러 일정을 연결합니다. 지원 전체 수정과 일정 수정은 `version`으로 오래된 편집을 거부합니다. 회원의 `authVersion`은 전체 로그아웃·비밀번호 변경 후 오래된 세션을 거부하는 별도 값입니다.
 
-<details open>
-<summary><b>1. 백엔드 (Spring Boot)</b></summary>
+```text
+backend/src/main/java/com/bin/jobtracker/
+  controller/  dto/  service/  repository/  entity/  security/  config/  exception/
+backend/src/main/resources/db/migration/  # Flyway SQL
+backend/src/test/                        # 서버와 DB 테스트
+frontend/src/api/                        # 공통 쿠키·CSRF 클라이언트
+frontend/src/store/                      # 로그인 상태
+frontend/src/domain/                     # 집계·필터·PWA 보호 규칙
+frontend/src/workspace/                  # 화면·편집·설치·업데이트
+frontend/tests/                         # Playwright
+.github/workflows/                      # CI와 Gemini
+scripts/                                # 로컬 실행·검증
+```
 
-<br/>
+## 보안과 한계
 
-```bash
+- 세션 쿠키: HttpOnly, SameSite=Lax, 운영 프로필 Secure. 로그인 시 세션 ID 교체.
+- CSRF: 로그인·회원가입·로그아웃을 포함한 변경 요청에 적용. 변경 직전 토큰을 조회하며 쓰기를 자동 재시도하지 않습니다.
+- 서버에서 회원 소유권·일정 소속·입력 조건을 검사합니다. 비밀번호 변경·탈퇴 시 현재 비밀번호를 재확인합니다.
+- API는 `private, no-store`, 서비스 워커는 API NetworkOnly입니다. 비밀번호·초안을 localStorage에 저장하지 않습니다.
+- 인증 관련 요청에 IP·계정·전체 예산을 적용하고 429/Retry-After를 반환합니다. API 본문은 기본 32KiB 제한입니다.
+- 일시적 세션 확인 실패 중에는 입력을 보존하되 저장을 제한합니다. UI 보호이며 서버 인증·인가를 대체하지 않습니다.
+- **남은 검증:** HTTPS·신뢰 프록시 IP·운영 DB 이전/복원·실기기. 다중 서버 공유 요청 제한, 강제 종료 후 초안 복구, 모든 내부 이동의 초안 보호는 제공하지 않습니다.
+
+테스트 통과나 AI 리뷰의 무지적 결과는 보안 감사·운영 안전 보증이 아닙니다.
+
+## API
+
+기본 경로는 `/api/v1`입니다. 공개 회원가입·로그인에도 CSRF는 필요합니다.
+
+| 메서드 | 회원 경로 | 역할 |
+|---|---|---|
+| GET | `/members/csrf` | CSRF 토큰 조회 |
+| POST | `/members/join` | 회원가입 |
+| GET | `/members/check-username` | 아이디 중복 확인 |
+| POST | `/members/login` | 세션 로그인 |
+| POST | `/members/logout` | 현재 세션 로그아웃 |
+| POST | `/members/logout-all` | 모든 세션 폐기 |
+| GET | `/members/me` | 내 정보 |
+| PATCH | `/members/me/nickname` | 닉네임 변경 |
+| PATCH | `/members/me/avatar` | 아바타 변경 API |
+| PATCH | `/members/me/password` | 비밀번호 변경 및 세션 폐기 |
+| DELETE | `/members/me` | 현재 비밀번호 재확인 후 탈퇴 |
+
+지원·일정 경로는 모두 로그인과 서버 소유권 검사를 거칩니다.
+
+| 메서드 | 경로 | 역할 |
+|---|---|---|
+| GET / POST | `/applications` | 목록 / 등록 |
+| GET / PUT / DELETE | `/applications/{id}` | 단건 / 전체 편집 / 삭제 |
+| GET | `/applications/stats` | 상태별 통계 API |
+| PATCH | `/applications/{id}/status` | 상태·필요한 지원일 변경 |
+| POST | `/applications/{id}/schedules` | 일정 추가 |
+| PUT / DELETE | `/applications/{id}/schedules/{scheduleId}` | 일정 편집 / 삭제 |
+| PUT / DELETE | `/applications/{id}/legacy-schedules/{type}` | 이전 단일 날짜의 변환 / 삭제 |
+
+## 로컬 실행
+
+필요 도구: JDK 21, Node.js 24, pnpm 11.19.0. PostgreSQL 전용 테스트에는 Docker가 필요합니다.
+
+Windows PowerShell에서 JDK 21의 `JAVA_HOME` 또는 `java` 경로를 설정한 후:
+
+```powershell
 cd backend
-./gradlew bootRun
+.\gradlew.bat test bootJar
+cd ..\frontend
+pnpm install --frozen-lockfile
+cd ..
+.\scripts\Start-Local.ps1
 ```
 
-서버      : http://localhost:8080
+- 화면: `http://127.0.0.1:5173`, API: `http://127.0.0.1:8080/api/v1`.
+- 실행기는 `demo` 프로필과 로컬 파일 H2를 사용합니다. 운영 DB에 연결하지 않습니다.
+- 다른 JDK 경로는 `-JavaHome`, 사용 중인 포트는 `-BackendPort`·`-FrontendPort`로 지정합니다.
+- PID와 로그는 `.local`, demo 데이터는 `backend/data`에 저장됩니다. API 키·실제 DB 비밀번호·로컬 데이터는 커밋하지 않습니다.
+- 기본 API 주소는 `/api/v1`입니다. `VITE_API_URL`은 공개 프론트 설정이므로 비밀값을 넣지 않습니다.
+- PWA 확인은 `frontend`에서 `pnpm build` 후 `pnpm preview`로 진행합니다. 개발 서버와 배포 산출물 검증은 구분합니다.
 
-Swagger   : http://localhost:8080/swagger-ui/index.html
+## 테스트와 자동 리뷰
 
-> 로컬은 MySQL을 사용합니다. `jobtracker` 데이터베이스를 생성한 뒤,
-> JWT 시크릿과 DB 비밀번호를 `application-secret.yml`(gitignore 처리)에 설정합니다.
+| 필수 CI | 검증 내용 |
+|---|---|
+| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 11개 |
+| Backend tests and build | H2/단위·통합 테스트 55개와 bootJar |
+| PostgreSQL migrations and sessions | Testcontainers 기반 이전·복원 6개 + 세션 11개 |
+| Workflow tests | 워크플로 권한·Gemini 호출/결과 처리 모의 테스트 14개 |
 
-</details>
+숫자는 이 README 기준 개발 버전의 검증 범위입니다. 브라우저 테스트의 API fixture는 실제 백엔드 검증을 대신하지 않습니다.
 
-<details>
-<summary><b>2. 프론트엔드 (React)</b></summary>
+```powershell
+# frontend
+pnpm lint
+pnpm test
+pnpm build
+pnpm check:pwa
+pnpm exec playwright install chromium
+pnpm test:e2e
 
-<br/>
+# backend, Docker 실행 필요
+.\gradlew.bat postgresTest
 
-```bash
-cd frontend
-pnpm install
-pnpm dev
+# .github
+npm ci --ignore-scripts
+npm test
 ```
-http://localhost:5173
 
-> 백엔드 주소는 `VITE_API_URL` 환경변수로 주입합니다. (미설정 시 localhost:8080)
+Gemini는 같은 저장소의 열린 일반 PR(`dev`/`main` 대상)의 변경된 소스만 검토합니다. fork·draft·닫힌 PR·검토 대상 소스가 없는 문서 PR은 건너뜁니다.
 
-</details>
+- 키는 Actions Repository secret `GEMINI_API_KEY`, 모델은 Repository variable `GEMINI_REVIEW_MODEL`을 사용합니다.
+- 기본 모델은 `gemini-3.8-flash`이며 실제 API 호출과 한국어 COMMENT 리뷰를 확인했습니다.
+- 선택된 diff를 Google로 전송합니다. 최대 60개 파일·120,000 diff 문자, 한 실행당 API 요청 1회, 최대 8개 줄별 의견으로 제한합니다.
+- 키와 오류 응답 본문은 출력하지 않습니다. 이미 리뷰한 같은 커밋은 중복 호출하지 않습니다.
+- 자동 승인·병합하지 않으며, 사용량·과금은 Google 계정에서 별도로 확인해야 합니다.
+- [실제 리뷰 연결 PR #27](https://github.com/Bin-925/job-application-tracker/pull/27), [입력 보호 보강 PR #30](https://github.com/Bin-925/job-application-tracker/pull/30).
 
-<br/>
+## 협업 흐름
 
-## ✅ 테스트 & CI
+```mermaid
+flowchart LR
+    I[작업별 이슈] --> B[issue-N 브랜치]
+    B --> P[dev 대상 PR]
+    P --> C[필수 CI와 보조 AI 리뷰]
+    C --> R[변경 내용 검토]
+    R --> D[dev 통합]
+    D --> G[별도 출시 검증과 배포 PR]
+    G --> M[main]
+```
 
-- 단위 · 통합 테스트 (JUnit 5 · Mockito · MockMvc)
-- **GitHub Actions**: `push` 시 테스트 자동 실행
-- 버그는 **GitHub Issues**로 트래킹
+`main`은 배포용, `dev`는 통합용, `issue-번호`는 작업용입니다. 두 장기 브랜치는 PR·필수 CI·대화 해결을 요구하고 강제 푸시·삭제를 금지합니다. 개인 저장소에서 작성자 자신의 Approve를 독립 승인으로 표시하지 않습니다.
 
-<br/>
+템플릿은 [CONTRIBUTING.md](CONTRIBUTING.md)를 따릅니다. 필수 CI는 배포 작업이 아닙니다. 연결된 Vercel Preview 등의 배포 결과도 CI 테스트와 구분합니다.
 
-## 🌿 브랜치 전략
-feat/*  ─►  main
+## 남은 단계
 
-| 브랜치 | 설명 |
-|--------|------|
-| `main` | 배포 가능한 안정 브랜치 |
-| `feat/*` | 기능 개발 브랜치 |
+1. **예산·배포 방식 결정:** Railway 통합과 향후 EC2 실습을 검토하되 현재 실행은 보류합니다. AWS 직접 활용과 운영 학습도 기술 선택의 이유로 기록합니다.
+2. **[#20 HTTPS 스테이징](https://github.com/Bin-925/job-application-tracker/issues/20):** 동일 출처 API, Secure 쿠키, 신뢰 프록시, 운영 복제 데이터 이전·복원 검증.
+3. **[#21 Web Push](https://github.com/Bin-925/job-application-tracker/issues/21):** 동의·구독·발송·재시도·일정 변경/취소·기기별 수명주기.
+4. **[#22 원스토어 준비](https://github.com/Bin-925/job-application-tracker/issues/22):** 패키징 적합성, 도메인 검증, 서명, 개인정보 문서, Galaxy S25 Ultra, 심사 준비.
+5. **운영 게이트:** 계정 복구, 오류·비용 관측, 백업/복원, 개인정보 정책, 출시·롤백 절차.
 
-<br/>
+EC2·Redis·TypeScript 등을 이름만 추가하기 위해 도입하지 않습니다. 제품 요구뿐 아니라 명확한 학습 목표도 이유가 되며 비용·완료 조건·운영 책임을 함께 기록합니다.
 
-<div align="center">
+## 관련 문서
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:38bdf8,100:1e3a8a&height=120&section=footer" width="100%" />
+- [기획 PRD](PRD.md) · [협업 규칙](CONTRIBUTING.md) · [테스트 사례](docs/TEST_CASES.md)
+- [세션 전환과 배포 전 확인](docs/SESSION_AUTH_MIGRATION.md) · [PostgreSQL 이전 절차](docs/POSTGRES_MIGRATION.md)
+- [PWA 업데이트 보호](docs/PWA_UPDATE_PROTECTION.md) · [브라우저 CI 실패 분석](docs/PWA_CI_REGRESSION.md)
+- [CI와 Gemini 설정](docs/CI_AND_AI_REVIEW.md) · [배포 방식 비교](docs/DEPLOYMENT_COMPARISON.md)
+- [이전 dev 통합 보고서](docs/DEV_INTEGRATION_2026-09-28.md) · [AI 협업 기록](AI_COLLABORATION.md)
 
-</div>
+각 보고서는 작성 시점의 기록입니다. 현재 기능·보류 항목은 이 README를 기준으로 보고 구체적인 코드·검증 근거는 연결된 파일과 PR에서 확인합니다.
