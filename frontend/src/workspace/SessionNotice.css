@@ -1,0 +1,3 @@
+.notice.session-notice { flex-direction: column; align-items: stretch; gap: 12px; }
+.session-notice p { margin: 0; }
+.session-notice button { align-self: flex-start; flex-shrink: 0; white-space: nowrap; }
