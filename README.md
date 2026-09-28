@@ -1,10 +1,17 @@
 <!-- 이 README는 GitHub 레포 페이지에서 봐야 제대로 렌더링됩니다 (뱃지·표·다이어그램) -->
+
+> 2026-09 개발 브랜치: [현재 구현/실행/출시 전 점검](docs/IMPLEMENTATION_STATUS.md),
+> [기술 선택 이유](docs/adr/0001-workflow-and-pwa.md), [디자인 QA](design-qa.md).
+> 아래 라이브 데모와 기존 스크린샷은 이전 배포 버전이며, 이번 변경은 아직 운영에 배포하지 않았습니다.
+> 2026-09-24: 로컬 코드는 JWT 대신 JDBC 세션 인증을 사용합니다. 아래 기존 JWT 설명은 이전 버전 기준입니다. [전환 이유](docs/adr/0002-jdbc-session-auth.md) · [실행 및 배포 전 확인](docs/SESSION_AUTH_MIGRATION.md).
+> 2026-09-28: 작업별 이슈·PR을 `dev`로 통합하고 테스트를 검증했습니다. [협업 규칙](CONTRIBUTING.md) · [통합 결과와 학습 보충](docs/DEV_INTEGRATION_2026-09-28.md). `main` 운영 버전과 구분하며 Gemini 실제 리뷰는 API 키 등록 대기입니다.
+
 <div align="center">
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1e3a8a,100:38bdf8&height=200&section=header&text=취준노트&fontSize=60&fontColor=ffffff&fontAlignY=35&desc=구직%20지원%20현황%20관리%20·%20Full-Stack&descSize=20&descAlignY=58&animation=fadeIn" width="100%" />
 
 ### 📒 취준노트 — 구직 지원 현황 트래커
-![CI](https://github.com/Bin-925/job-application-tracker/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/Bin-925/job-application-tracker/actions/workflows/ci.yml/badge.svg?branch=dev)
 
 지원한 채용공고를 등록하고 **진행 상태**를 관리하는 풀스택 서비스입니다.
 

@@ -1,0 +1,15 @@
+{
+  "chapters": 23,
+  "tables": 35,
+  "diagrams": 22,
+  "diagramSyntaxErrors": [],
+  "answerPanels": 24,
+  "emptyAnswers": 0,
+  "brokenAnchors": [],
+  "scripts": [
+    "assets/mermaid.min.js",
+    "inline-reader"
+  ],
+  "externalImages": 0,
+  "visualBrowserCheck": "Not performed: local-file browser access was blocked. Static syntax and DOM checks only."
+}

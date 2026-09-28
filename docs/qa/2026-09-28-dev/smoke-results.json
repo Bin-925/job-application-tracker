@@ -1,0 +1,17 @@
+{
+  "passed": 6,
+  "checks": [
+    "Browser sign-up/login with HttpOnly session and no legacy token",
+    "Create application and open matching in-progress filter from home",
+    "Change status, add interview and open matching upcoming-interview filter",
+    "Monthly calendar, applied-date toggle, month navigation and 360/412/1440px layouts",
+    "Real HTTP CSRF rejection, stale edit conflict and account data isolation",
+    "Server logout invalidation, redirect and test-account cleanup; no browser runtime errors"
+  ],
+  "browserErrors": [],
+  "viewports": [
+    360,
+    412,
+    1440
+  ]
+}
