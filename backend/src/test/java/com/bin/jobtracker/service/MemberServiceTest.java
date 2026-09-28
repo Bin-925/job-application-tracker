@@ -67,7 +67,7 @@ class MemberServiceTest {
         given(passwordEncoder.matches("wrongpw", "encoded_pw")).willReturn(false);
 
         assertThatThrownBy(() -> memberService.login("alice", "wrongpw"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(org.springframework.security.authentication.BadCredentialsException.class);
     }
 
     @Test
@@ -76,6 +76,6 @@ class MemberServiceTest {
         given(memberRepository.findByUsername("nobody")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> memberService.login("nobody", "pw"))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(org.springframework.security.authentication.BadCredentialsException.class);
     }
 }

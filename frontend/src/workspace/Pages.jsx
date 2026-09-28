@@ -5,7 +5,7 @@ import { ko } from 'date-fns/locale'
 import { ArrowLeft, CalendarPlus, ChevronLeft, ChevronRight, ExternalLink, LogOut, Moon, Pencil, Plus, Search, Sun, Trash2 } from 'lucide-react'
 import { dateKey, errorMessage, eventsOf, filterApplications, hasUpcomingInterview, isActive, isUpcoming, prettyDate, safeLink, sortEvents, statuses } from '../domain/tracker'
 import api from '../api/client'
-import { removeToken } from '../store/auth'
+import { notifySessionChanged } from '../store/auth'
 import { Editor } from './Editor'
 
 export function ApplicationAction({ edit = false }) {
@@ -129,7 +129,16 @@ export function Settings() {
   async function save(event, type) {
     event.preventDefault(); setBusy(true); setError('')
     const form = event.currentTarget
-    try { const response = await api.patch('/members/me/' + type, Object.fromEntries(new FormData(form))); if (type === 'nickname') setMember(response.data); else form.reset(); notify('변경 사항을 저장했습니다.') } catch (e) { setError(errorMessage(e)) } finally { setBusy(false) }
+    try {
+      const response = await api.patch('/members/me/' + type, Object.fromEntries(new FormData(form)))
+      if (type === 'nickname') { setMember(response.data); notify('변경 사항을 저장했습니다.') }
+      else { notifySessionChanged(); navigate('/login?passwordChanged=1', { replace: true }) }
+    } catch (e) { setError(errorMessage(e)) } finally { setBusy(false) }
+  }
+  async function logout(all = false) {
+    setBusy(true); setError('')
+    try { await api.post(all ? '/members/logout-all' : '/members/logout'); notifySessionChanged(); navigate('/login', { replace: true }) }
+    catch (e) { setError(errorMessage(e)) } finally { setBusy(false) }
   }
   return <>
     <Heading title="내 정보" />
@@ -138,6 +147,6 @@ export function Settings() {
     <section className="settings-section"><h2>화면 설정</h2><label className="setting-toggle">{dark ? <Moon size={19} /> : <Sun size={19} />}다크 모드<input type="checkbox" role="switch" checked={dark} onChange={e => { setDark(e.target.checked); document.documentElement.classList.toggle('dark', e.target.checked); localStorage.setItem('theme', e.target.checked ? 'dark' : 'light') }} /></label></section>
     {member && <section className="settings-section"><h2>닉네임</h2><form className="inline-form" onSubmit={e => save(e, 'nickname')}><input aria-label="닉네임" name="nickname" defaultValue={member.nickname} required maxLength={10} /><button disabled={busy}>저장</button></form></section>}
     <section className="settings-section"><h2>비밀번호 변경</h2><form onSubmit={e => save(e, 'password')}><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" required /></label><label>새 비밀번호<input name="newPassword" type="password" autoComplete="new-password" required minLength={8} maxLength={30} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,30}" title="영문과 숫자를 포함한 8~30자" /></label><button disabled={busy}>비밀번호 변경</button></form></section>
-    <section className="settings-section"><button onClick={() => { removeToken(); navigate('/login', { replace: true }) }}><LogOut size={18} />로그아웃</button><button className="text-button danger" onClick={() => open({ kind: 'withdraw', count: apps.length })}>회원 탈퇴</button></section>
+    <section className="settings-section"><button disabled={busy} onClick={() => logout()}><LogOut size={18} />로그아웃</button><button disabled={busy} onClick={() => logout(true)}><LogOut size={18} />모든 기기에서 로그아웃</button><button disabled={busy} className="text-button danger" onClick={() => open({ kind: 'withdraw', count: apps.length })}>회원 탈퇴</button></section>
   </>
 }

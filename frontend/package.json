@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "test": "node --test src/domain/*.test.js",
+    "test": "node --test src/domain/*.test.js src/api/*.test.js",
     "icons": "node scripts/generate-icons.mjs",
     "check:pwa": "node scripts/check-pwa.mjs",
     "dev": "vite",

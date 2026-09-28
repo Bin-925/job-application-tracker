@@ -1,0 +1,193 @@
+package com.bin.jobtracker.controller;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import java.util.Map;
+import java.util.UUID;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class SessionSecurityIntegrationTest {
+    private static final String ROOT = "/api/v1/members";
+    private static final String PASSWORD = "Test1234";
+    @Autowired MockMvc mvc;
+    @Autowired ObjectMapper json;
+    @Autowired JdbcTemplate jdbc;
+
+    // No mock authentication or csrf() postprocessor: exercise the browser protocol.
+    private class Browser {
+        Cookie cookie;
+        String csrf;
+        MvcResult send(MockHttpServletRequestBuilder request, int status) throws Exception {
+            if (cookie != null) request.cookie(cookie);
+            var result = mvc.perform(request).andExpect(status().is(status)).andReturn();
+            var updated = result.getResponse().getCookie("SESSION");
+            if (updated != null) cookie = updated.getMaxAge() == 0 ? null : updated;
+            return result;
+        }
+        void fetchCsrf() throws Exception {
+            csrf = body(send(get(ROOT + "/csrf"), 200)).get("token").asText();
+        }
+        MvcResult write(MockHttpServletRequestBuilder request, Object payload, int status) throws Exception {
+            fetchCsrf();
+            return send(request.header("X-CSRF-TOKEN", csrf).contentType(MediaType.APPLICATION_JSON)
+                    .content(json.writeValueAsString(payload)), status);
+        }
+        void login(String name, String password) throws Exception {
+            write(post(ROOT + "/login"), Map.of("username", name, "password", password), 200);
+        }
+    }
+    private JsonNode body(MvcResult result) throws Exception {
+        return json.readTree(result.getResponse().getContentAsString());
+    }
+    private String join(Browser browser) throws Exception {
+        String name = "u" + UUID.randomUUID().toString().replace("-", "").substring(0, 10);
+        browser.write(post(ROOT + "/join"), Map.of("username", name, "password", PASSWORD, "nickname", "Tester"), 201);
+        return name;
+    }
+    private Browser loggedIn() throws Exception {
+        var browser = new Browser();
+        browser.login(join(browser), PASSWORD);
+        return browser;
+    }
+
+    @Test void loginRotatesIdAndCsrfAndDoesNotExposeCredentials() throws Exception {
+        var browser = new Browser();
+        String name = join(browser);
+        browser.fetchCsrf();
+        Cookie before = browser.cookie;
+        String oldCsrf = browser.csrf;
+        var login = browser.send(post(ROOT + "/login").header("X-CSRF-TOKEN", oldCsrf)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("username", name, "password", PASSWORD))), 200);
+        assertThat(browser.cookie.getValue()).isNotEqualTo(before.getValue());
+        assertThat(browser.cookie.isHttpOnly()).isTrue();
+        assertThat(login.getResponse().getHeader("Set-Cookie")).contains("SameSite=Lax", "Path=/");
+        assertThat(body(login).has("accessToken")).isFalse();
+        assertThat(body(login).has("password")).isFalse();
+        assertThat(login.getResponse().getHeader("Cache-Control")).contains("no-store");
+        mvc.perform(get(ROOT + "/me").cookie(before)).andExpect(status().isUnauthorized());
+        browser.send(patch(ROOT + "/me/nickname").header("X-CSRF-TOKEN", oldCsrf)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"nickname\":\"Changed\"}"), 403);
+        browser.write(patch(ROOT + "/me/nickname"), Map.of("nickname", "Changed"), 200);
+        Long id = body(browser.send(get(ROOT + "/me"), 200)).get("id").asLong();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM SPRING_SESSION WHERE PRINCIPAL_NAME = ?",
+                Integer.class, id.toString())).isEqualTo(1);
+    }
+
+    @Test void unsafeRequestsRequireCsrfIncludingLoginAndLogout() throws Exception {
+        mvc.perform(post(ROOT + "/join").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        mvc.perform(post(ROOT + "/login").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        var browser = loggedIn();
+        browser.send(post(ROOT + "/logout"), 403);
+        browser.send(delete(ROOT + "/me"), 403);
+        browser.send(post("/api/v1/applications").contentType(MediaType.APPLICATION_JSON).content("{}"), 403);
+        browser.send(get(ROOT + "/me"), 200);
+    }
+
+    @Test void logoutInvalidatesCookieAndReplay() throws Exception {
+        var browser = loggedIn();
+        Cookie previous = browser.cookie;
+        var result = browser.write(post(ROOT + "/logout"), Map.of(), 204);
+        assertThat(result.getResponse().getCookie("SESSION").getMaxAge()).isZero();
+        mvc.perform(get(ROOT + "/me").cookie(previous)).andExpect(status().isUnauthorized());
+        browser.send(get(ROOT + "/me"), 401);
+    }
+
+    @Test void logoutAllRevokesTwoIndependentDevices() throws Exception {
+        var first = new Browser();
+        String name = join(first);
+        first.login(name, PASSWORD);
+        var second = new Browser();
+        second.login(name, PASSWORD);
+        Cookie old = first.cookie;
+        first.write(post(ROOT + "/logout-all"), Map.of(), 204);
+        mvc.perform(get(ROOT + "/me").cookie(old)).andExpect(status().isUnauthorized());
+        second.send(get(ROOT + "/me"), 401);
+        second.login(name, PASSWORD);
+        second.send(get(ROOT + "/me"), 200);
+    }
+
+    @Test void passwordChangeRevokesBothDevicesAndOldPassword() throws Exception {
+        var first = new Browser();
+        String name = join(first);
+        first.login(name, PASSWORD);
+        var second = new Browser();
+        second.login(name, PASSWORD);
+        Cookie old = first.cookie;
+        first.write(patch(ROOT + "/me/password"), Map.of("currentPassword", PASSWORD, "newPassword", "Newpass1234"), 204);
+        mvc.perform(get(ROOT + "/me").cookie(old)).andExpect(status().isUnauthorized());
+        second.send(get(ROOT + "/me"), 401);
+        first.write(post(ROOT + "/login"), Map.of("username", name, "password", PASSWORD), 401);
+        first.login(name, "Newpass1234");
+        first.send(get(ROOT + "/me"), 200);
+    }
+
+    @Test void wrongCurrentPasswordPreservesSessions() throws Exception {
+        var browser = loggedIn();
+        browser.write(patch(ROOT + "/me/password"), Map.of("currentPassword", "Wrong1234", "newPassword", "Newpass1234"), 400);
+        browser.write(delete(ROOT + "/me"), Map.of("currentPassword", "Wrong1234"), 400);
+        browser.write(delete(ROOT + "/me"), Map.of(), 400);
+        browser.send(get(ROOT + "/me"), 200);
+    }
+
+    @Test void accountDeletionRevokesOtherDevices() throws Exception {
+        var first = new Browser();
+        String name = join(first);
+        first.login(name, PASSWORD);
+        var second = new Browser();
+        second.login(name, PASSWORD);
+        first.write(delete(ROOT + "/me"), Map.of("currentPassword", PASSWORD), 204);
+        second.send(get(ROOT + "/me"), 401);
+        first.write(post(ROOT + "/login"), Map.of("username", name, "password", PASSWORD), 401);
+    }
+
+    @Test void revisionCheckRejectsSessionsThatOutliveRepositoryCleanup() throws Exception {
+        var browser = loggedIn();
+        Long id = body(browser.send(get(ROOT + "/me"), 200)).get("id").asLong();
+        jdbc.update("UPDATE member SET auth_version = auth_version + 1 WHERE id = ?", id);
+        var rejected = browser.send(get(ROOT + "/me"), 401);
+        assertThat(rejected.getResponse().getHeader("Cache-Control")).contains("no-store");
+    }
+
+    @Test void expiredSessionsAreRejectedWithoutWaitingForCleanupJob() throws Exception {
+        var browser = loggedIn();
+        Long id = body(browser.send(get(ROOT + "/me"), 200)).get("id").asLong();
+        jdbc.update("UPDATE SPRING_SESSION SET LAST_ACCESS_TIME = 0, EXPIRY_TIME = 0 WHERE PRINCIPAL_NAME = ?", id.toString());
+        browser.send(get(ROOT + "/me"), 401);
+    }
+
+    @Test void unknownAndWrongPasswordHaveSamePublicResponse() throws Exception {
+        var browser = new Browser();
+        String name = join(browser);
+        var wrong = body(browser.write(post(ROOT + "/login"), Map.of("username", name, "password", "Wrong1234"), 401));
+        var missing = body(browser.write(post(ROOT + "/login"), Map.of("username", "nobody9999999999", "password", "Wrong1234"), 401));
+        assertThat(wrong.get("message")).isEqualTo(missing.get("message"));
+        browser.send(get(ROOT + "/me"), 401);
+    }
+
+    @Test void untrustedCorsAndLegacyBearerAreRejected() throws Exception {
+        mvc.perform(options(ROOT + "/login").header("Origin", "https://untrusted.vercel.app")
+                .header("Access-Control-Request-Method", "POST")).andExpect(status().isForbidden());
+        mvc.perform(options(ROOT + "/login").header("Origin", "http://127.0.0.1:5173")
+                .header("Access-Control-Request-Method", "POST").header("Access-Control-Request-Headers", "X-CSRF-TOKEN"))
+                .andExpect(status().isOk()).andExpect(header().string("Access-Control-Allow-Credentials", "true"));
+        mvc.perform(get(ROOT + "/me").header("Authorization", "Bearer legacy-token"))
+                .andExpect(status().isUnauthorized());
+    }
+}

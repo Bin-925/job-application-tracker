@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, NotebookPen } from 'lucide-react'
 import api from '../api/client'
-import { getToken, setToken } from '../store/auth'
+import { notifySessionChanged } from '../store/auth'
+import { useSession } from '../store/sessionContext'
 import { errorMessage } from '../domain/tracker'
 
 export function AuthPage({ join = false }) {
   const navigate = useNavigate()
+  const { member, status } = useSession()
   const [params] = useSearchParams()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -16,18 +18,20 @@ export function AuthPage({ join = false }) {
     setBusy(true); setError('')
     try {
       if (join) await api.post('/members/join', data)
-      const response = await api.post('/members/login', { username: data.username, password: data.password })
-      setToken(response.data.accessToken)
+      await api.post('/members/login', { username: data.username, password: data.password })
+      notifySessionChanged()
       navigate('/', { replace: true })
     } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
   }
-  if (getToken()) return <Navigate to="/" replace />
+  if (status === 'checking') return <p className="empty" role="status">로그인 확인 중...</p>
+  if (member) return <Navigate to="/" replace />
   return <main className="auth-page">
     <Link className="brand" to="/login"><NotebookPen size={26} />취준노트</Link>
     <section className="auth-form">
       <h1>{join ? '회원가입' : '다시 만나 반가워요'}</h1>
       <p className="muted">{join ? '나의 다음 커리어를 기록하세요.' : '오늘의 지원과 일정을 확인하세요.'}</p>
       {params.has('expired') && <p role="status" className="notice">로그인이 만료되었습니다. 다시 로그인해 주세요.</p>}
+      {params.has('passwordChanged') && <p role="status" className="notice">비밀번호를 변경하고 모든 기기에서 로그아웃했습니다.</p>}
       <form onSubmit={submit}>
         <label>아이디<input name="username" required autoComplete="username" pattern={join ? '[a-z0-9]{4,20}' : undefined} title="영문 소문자와 숫자 4~20자" maxLength={20} /></label>
         <label>비밀번호<input name="password" type="password" required autoComplete={join ? 'new-password' : 'current-password'} minLength={join ? 8 : undefined} maxLength={30} pattern={join ? '(?=.*[A-Za-z])(?=.*[0-9]).{8,30}' : undefined} title="영문과 숫자를 포함한 8~30자" /></label>
