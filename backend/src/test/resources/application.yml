@@ -1,4 +1,6 @@
 spring:
+  flyway:
+    enabled: false
   session:
     timeout: 7d
     jdbc:
@@ -15,3 +17,6 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+app:
+  rate-limit:
+    enabled: false

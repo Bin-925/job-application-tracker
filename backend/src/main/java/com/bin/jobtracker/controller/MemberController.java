@@ -29,6 +29,7 @@ public class MemberController {
     private final SecurityContextRepository contexts;
     private final SessionAuthenticationStrategy sessionStrategy;
     private final SessionService sessions;
+    private final com.bin.jobtracker.security.AuthRateLimiter limiter;
 
     @GetMapping("/csrf")
     public java.util.Map<String, String> csrf(CsrfToken token) {
@@ -43,6 +44,9 @@ public class MemberController {
 
     @GetMapping("/check-username")
     public ResponseEntity<Void> checkUsername(@RequestParam String username) {
+        if (username.length() < 4 || username.length() > 20 || !username.matches("[a-z0-9]+")) {
+            throw new IllegalArgumentException("아이디 입력값을 확인해 주세요.");
+        }
         if (memberService.existsByUsername(username)) {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
@@ -52,6 +56,7 @@ public class MemberController {
     @PostMapping("/login")
     public ResponseEntity<MemberResponse> login(@RequestBody @Valid LoginRequest req,
             HttpServletRequest request, HttpServletResponse response) {
+        limiter.checkLogin(req.username());
         var authentication = authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken.unauthenticated(req.username(), req.password()));
         sessionStrategy.onAuthentication(authentication, request, response);
@@ -105,6 +110,7 @@ public class MemberController {
             @AuthenticationPrincipal(expression = "memberId") Long memberId,
             @RequestBody @Valid PasswordUpdateRequest req,
             HttpServletRequest request, HttpServletResponse response) {
+        limiter.checkPasswordAction(memberId);
         memberService.changePassword(memberId, req.currentPassword(), req.newPassword());
         sessions.deleteAll(memberId);
         sessions.logout(request, response);
@@ -115,6 +121,7 @@ public class MemberController {
     public ResponseEntity<Void> deleteMember(@AuthenticationPrincipal(expression = "memberId") Long memberId,
             @RequestBody @Valid AccountDeleteRequest req,
             HttpServletRequest request, HttpServletResponse response) {
+        limiter.checkPasswordAction(memberId);
         memberService.deleteMember(memberId, req.currentPassword());
         sessions.deleteAll(memberId);
         sessions.logout(request, response);
