@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '.vercel']),
+  globalIgnores(['dist', '.vercel', 'test-results', 'playwright-report']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -18,5 +18,5 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
-  { files: ['**/*.test.js', 'scripts/*.mjs', 'vite.config.js'], languageOptions: { globals: globals.node } },
+  { files: ['**/*.test.js', 'scripts/*.mjs', 'tests/*.js', 'playwright.config.js', 'vite.config.js'], languageOptions: { globals: globals.node } },
 ])

@@ -22,7 +22,7 @@ flowchart LR
 | 작업 | 검사 내용 | 이유 |
 |---|---|---|
 | Workflow tests | YAML과 Gemini 리뷰 로직의 모의 테스트 | 자동화 자체의 잘못된 권한·댓글·API 호출 방지 |
-| Frontend and PWA | lint, Node 테스트, Vite 빌드, PWA 산출물 검사 | 화면 코드와 배포 파일 검증 |
+| Frontend and PWA | lint, Node 테스트, Vite 빌드, PWA 산출물 및 Playwright 다중 탭·오프라인 검사 | 화면 코드와 배포 파일·업데이트 입력 보호 검증 |
 | Backend tests and build | Java 21, Gradle 일반 테스트, bootJar | 기능·세션 보안·요청 제한과 실행 파일 검증 |
 | PostgreSQL migrations and sessions | Testcontainers PostgreSQL 17, Flyway, JDBC 세션, pg_dump/restore | H2로 확인할 수 없는 실제 DB 동작 검증 |
 
@@ -59,7 +59,7 @@ flowchart LR
 | 1 | CI와 PR 리뷰 연결 | 현재 PR의 CI 성공, 실제 Gemini 리뷰 게시 확인 |
 | 2 | 운영 PostgreSQL 이전 준비 | 실제 기존 스키마 비교, 백업, 별도 환경에서 복원·이전·롤백 리허설 |
 | 3 | HTTPS 스테이징 | 같은 origin, Secure 쿠키, 프록시 IP 신뢰 설정, Galaxy S25 Ultra 실기기 검증 |
-| 4 | PWA 업데이트 보호 | 작성 중 폼 유실 없이 새 버전 적용, 오프라인·재연결 검증 |
+| 4 | PWA 업데이트 보호 실기기 검증 | #19에서 브라우저 기반 보호·회귀 검사 구현. S25 Ultra 종료·복귀·설치 환경 검증은 남음 |
 | 5 | Web Push | 구독·해제, 예약 작업, 실패 재시도, 일정 변경·삭제 시 취소, 관측 지표 |
 | 6 | 원스토어 출시 | TWA/앱 패키징, 도메인 검증, 서명 키, 개인정보 문서, 실기기·심사 검증 |
 

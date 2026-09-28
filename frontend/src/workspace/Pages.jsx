@@ -7,6 +7,7 @@ import { dateKey, errorMessage, eventsOf, filterApplications, hasUpcomingIntervi
 import api from '../api/client'
 import { notifySessionChanged } from '../store/auth'
 import { Editor } from './Editor'
+import { useFormProtection } from './useFormProtection'
 
 export function ApplicationAction({ edit = false }) {
   const { apps, refresh, notify } = useOutletContext()
@@ -124,6 +125,8 @@ export function Settings() {
   const [member, setMember] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const nicknameProtection = useFormProtection(busy)
+  const passwordProtection = useFormProtection(busy)
   const [dark, setDark] = useState(document.documentElement.classList.contains('dark'))
   useEffect(() => { let active = true; api.get('/members/me').then(r => { if (active) setMember(r.data) }).catch(e => { if (active) setError(errorMessage(e)) }); return () => { active = false } }, [])
   async function save(event, type) {
@@ -131,7 +134,7 @@ export function Settings() {
     const form = event.currentTarget
     try {
       const response = await api.patch('/members/me/' + type, Object.fromEntries(new FormData(form)))
-      if (type === 'nickname') { setMember(response.data); notify('변경 사항을 저장했습니다.') }
+      if (type === 'nickname') { nicknameProtection.clear(); setMember(response.data); notify('변경 사항을 저장했습니다.') }
       else { notifySessionChanged(); navigate('/login?passwordChanged=1', { replace: true }) }
     } catch (e) { setError(errorMessage(e)) } finally { setBusy(false) }
   }
@@ -145,8 +148,8 @@ export function Settings() {
     {error && <p role="alert" className="error">{error}</p>}
     <section className="profile-heading"><span className="avatar">{member?.nickname?.slice(0, 1) || '나'}</span><div><h2>{member?.nickname || '불러오는 중…'}</h2><p className="muted">@{member?.username || ''}</p></div></section>
     <section className="settings-section"><h2>화면 설정</h2><label className="setting-toggle">{dark ? <Moon size={19} /> : <Sun size={19} />}다크 모드<input type="checkbox" role="switch" checked={dark} onChange={e => { setDark(e.target.checked); document.documentElement.classList.toggle('dark', e.target.checked); localStorage.setItem('theme', e.target.checked ? 'dark' : 'light') }} /></label></section>
-    {member && <section className="settings-section"><h2>닉네임</h2><form className="inline-form" onSubmit={e => save(e, 'nickname')}><input aria-label="닉네임" name="nickname" defaultValue={member.nickname} required maxLength={10} /><button disabled={busy}>저장</button></form></section>}
-    <section className="settings-section"><h2>비밀번호 변경</h2><form onSubmit={e => save(e, 'password')}><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" required /></label><label>새 비밀번호<input name="newPassword" type="password" autoComplete="new-password" required minLength={8} maxLength={30} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,30}" title="영문과 숫자를 포함한 8~30자" /></label><button disabled={busy}>비밀번호 변경</button></form></section>
+    {member && <section className="settings-section"><h2>닉네임</h2><form className="inline-form" onChange={nicknameProtection.markDirty} onSubmit={e => save(e, 'nickname')}><input aria-label="닉네임" name="nickname" defaultValue={member.nickname} disabled={busy} required maxLength={10} /><div><button disabled={busy}>저장</button><button type="reset" disabled={busy} onClick={nicknameProtection.clear}>취소</button></div></form></section>}
+    <section className="settings-section"><h2>비밀번호 변경</h2><form onChange={passwordProtection.markDirty} onSubmit={e => save(e, 'password')}><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" disabled={busy} required /></label><label>새 비밀번호<input name="newPassword" type="password" autoComplete="new-password" disabled={busy} required minLength={8} maxLength={30} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,30}" title="영문과 숫자를 포함한 8~30자" /></label><div><button disabled={busy}>비밀번호 변경</button><button type="reset" disabled={busy} onClick={passwordProtection.clear}>취소</button></div></form></section>
     <section className="settings-section"><button disabled={busy} onClick={() => logout()}><LogOut size={18} />로그아웃</button><button disabled={busy} onClick={() => logout(true)}><LogOut size={18} />모든 기기에서 로그아웃</button><button disabled={busy} className="text-button danger" onClick={() => open({ kind: 'withdraw', count: apps.length })}>회원 탈퇴</button></section>
   </>
 }

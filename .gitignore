@@ -52,3 +52,5 @@ backend/data/
 !.env.example
 !frontend/.env.production
 .github/node_modules/
+frontend/test-results/
+frontend/playwright-report/
