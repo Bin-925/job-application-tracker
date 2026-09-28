@@ -59,7 +59,28 @@ public class ApplicationController {
             @AuthenticationPrincipal Long memberId,
             @PathVariable Long id,
             @RequestBody @Valid StatusUpdateRequest req) {
-        return ApplicationResponse.from(applicationService.changeStatus(memberId, id, req.status()));
+        return ApplicationResponse.from(applicationService.changeStatus(memberId, id, req));
+    }
+
+    @PostMapping("/{id}/schedules")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApplicationResponse addSchedule(@AuthenticationPrincipal Long memberId,
+            @PathVariable Long id, @RequestBody @Valid com.bin.jobtracker.dto.ScheduleRequest request) {
+        return ApplicationResponse.from(applicationService.addSchedule(memberId, id, request));
+    }
+
+    @PutMapping("/{id}/schedules/{scheduleId}")
+    public ApplicationResponse updateSchedule(@AuthenticationPrincipal Long memberId,
+            @PathVariable Long id, @PathVariable Long scheduleId,
+            @RequestBody @Valid com.bin.jobtracker.dto.ScheduleRequest request) {
+        return ApplicationResponse.from(applicationService.updateSchedule(memberId, id, scheduleId, request));
+    }
+
+    @DeleteMapping("/{id}/schedules/{scheduleId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSchedule(@AuthenticationPrincipal Long memberId,
+            @PathVariable Long id, @PathVariable Long scheduleId) {
+        applicationService.deleteSchedule(memberId, id, scheduleId);
     }
 
     @DeleteMapping("/{id}")
@@ -69,4 +90,19 @@ public class ApplicationController {
         applicationService.delete(memberId, id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}/legacy-schedules/{type}")
+    public ApplicationResponse replaceLegacy(@AuthenticationPrincipal Long memberId,
+            @PathVariable Long id, @PathVariable com.bin.jobtracker.entity.ScheduleEvent.Type type,
+            @RequestBody @Valid com.bin.jobtracker.dto.ScheduleRequest request) {
+        return ApplicationResponse.from(applicationService.replaceLegacySchedule(memberId, id, type, request));
+    }
+
+    @DeleteMapping("/{id}/legacy-schedules/{type}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteLegacy(@AuthenticationPrincipal Long memberId,
+            @PathVariable Long id, @PathVariable com.bin.jobtracker.entity.ScheduleEvent.Type type) {
+        applicationService.replaceLegacySchedule(memberId, id, type, null);
+    }
+
 }

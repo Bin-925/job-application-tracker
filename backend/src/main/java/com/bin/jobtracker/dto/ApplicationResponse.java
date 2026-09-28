@@ -19,12 +19,15 @@ public record ApplicationResponse(
         String link,
         String memo,
         ApplicationSource source,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Long version,
+        java.util.List<ScheduleResponse> schedules
 ) {
     public static ApplicationResponse from(Application a) {
         return new ApplicationResponse(
                 a.getId(), a.getCompany(), a.getPosition(), a.getStatus(),
                 a.getAppliedDate(), a.getDeadline(), a.getInterviewDate(), a.getInterviewTime(),
-                a.getLink(), a.getMemo(), a.getSource(), a.getCreatedAt());
+                a.getLink(), a.getMemo(), a.getSource(), a.getCreatedAt(), a.getVersion(),
+                a.getSchedules().stream().map(ScheduleResponse::from).toList());
     }
 }

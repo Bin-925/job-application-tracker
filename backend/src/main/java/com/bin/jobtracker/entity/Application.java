@@ -14,6 +14,28 @@ import java.time.LocalTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Application extends BaseEntity {
 
+    @Version
+    private Long version;
+
+    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
+    @org.hibernate.annotations.BatchSize(size = 50)
+    private java.util.List<ScheduleEvent> schedules = new java.util.ArrayList<>();
+
+    public void recordAppliedDate(LocalDate date) {
+        if (appliedDate == null) appliedDate = date;
+    }
+
+    public void clearLegacySchedule(ScheduleEvent.Type type) {
+        if (type == ScheduleEvent.Type.INTERVIEW && interviewDate != null) {
+            interviewDate = null;
+            interviewTime = null;
+        } else if (type == ScheduleEvent.Type.DEADLINE && deadline != null) {
+            deadline = null;
+        } else {
+            throw new com.bin.jobtracker.exception.NotFoundException("일정이 이미 변경되었거나 삭제되었습니다.");
+        }
+    }
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private Member member;

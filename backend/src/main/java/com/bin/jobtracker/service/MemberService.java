@@ -14,6 +14,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final com.bin.jobtracker.repository.ApplicationRepository applicationRepository;
 
     @Transactional
     public Member join(String username, String password, String nickname) {
@@ -52,6 +53,8 @@ public class MemberService {
     @Transactional
     public void deleteMember(Long memberId) {
         Member member = findById(memberId);
+        applicationRepository.deleteAll(applicationRepository.findByMemberId(memberId));
+        applicationRepository.flush();
         memberRepository.delete(member);
     }
 

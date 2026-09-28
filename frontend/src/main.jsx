@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import './index.css'
+import './workspace/workspace.css'
 import App from './App.jsx'
 
 // 저장된 다크모드 설정 적용 (렌더 전에 실행)
