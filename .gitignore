@@ -42,3 +42,13 @@ replacements.txt
 bfg-*.jar
 
 .vercel
+
+# Local development data and process logs
+backend/data/
+.local/
+
+# Local environment files; only public templates/configuration are versioned.
+.env*
+!.env.example
+!frontend/.env.production
+.github/node_modules/

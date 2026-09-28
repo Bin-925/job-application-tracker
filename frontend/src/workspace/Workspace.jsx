@@ -5,6 +5,7 @@ import api from '../api/client'
 import { getToken } from '../store/auth'
 import { errorMessage } from '../domain/tracker'
 import { Editor } from './Editor'
+import { PwaStatus } from './PwaStatus'
 
 export function Workspace() {
   const navigate = useNavigate()
@@ -40,6 +41,7 @@ export function Workspace() {
     <div className="content">
       <header className="mobile-header"><NavLink to="/" className="brand"><NotebookPen size={22} />취준노트</NavLink><button className="icon" title="새로고침" onClick={refresh}><RefreshCw size={19} /></button></header>
       {!online && <div role="status" className="notice"><WifiOff size={18} />오프라인입니다. 변경 사항을 저장하려면 연결이 필요합니다.</div>}
+      <PwaStatus />
       {loading ? <p className="empty" role="status">지원 내역을 불러오는 중…</p> : error ? <section className="empty"><p role="alert">{error}</p><button onClick={refresh}><RefreshCw size={16} />다시 시도</button></section> : <Outlet context={context} />}
       <button className="fab" title="지원 추가" aria-label="지원 추가" onClick={() => setEditor({ kind: 'application' })}><Plus size={26} /></button>
     </div>
