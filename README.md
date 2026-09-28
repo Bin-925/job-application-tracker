@@ -227,7 +227,8 @@ EC2·Redis·TypeScript 등을 이름만 추가하기 위해 도입하지 않습�
 
 ## 관련 문서
 
-- [기획 PRD](PRD.md) · [협업 규칙](CONTRIBUTING.md) · [테스트 사례](docs/TEST_CASES.md)
+- [문서 안내](docs/README.md) — 어떤 문서가 최신이고 어떤 문서가 시점 기록인지
+- [기획 PRD](PRD.md) · [협업 규칙](CONTRIBUTING.md) · [AI 작업 규칙](AGENTS.md)
 - [세션 전환과 배포 전 확인](docs/SESSION_AUTH_MIGRATION.md) · [PostgreSQL 이전 절차](docs/POSTGRES_MIGRATION.md)
 - [PWA 업데이트 보호](docs/PWA_UPDATE_PROTECTION.md) · [브라우저 CI 실패 분석](docs/PWA_CI_REGRESSION.md)
 - [CI와 Gemini 설정](docs/CI_AND_AI_REVIEW.md) · [배포 방식 비교](docs/DEPLOYMENT_COMPARISON.md)
