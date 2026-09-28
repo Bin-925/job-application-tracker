@@ -47,12 +47,13 @@ test.afterEach(async () => {
 async function open(page, route = '/') {
   await page.goto(origin + route)
   await expect(page.getByRole('heading', { name: route === '/mypage' ? '내 정보' : '오늘', exact: true })).toBeVisible()
-  await page.waitForFunction(async () => !!(await navigator.serviceWorker.getRegistration())?.active)
+  await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.active?.state)).toBe('activated')
+  await page.evaluate(() => navigator.serviceWorker.ready.then(() => true))
 }
 
 async function update(page) {
   revision++
-  await page.evaluate(async () => { await (await navigator.serviceWorker.ready).update() })
+  await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration()).update() })
   await expect(page.getByRole('button', { name: '업데이트', exact: true })).toBeVisible()
 }
 
@@ -127,9 +128,10 @@ test('offline save keeps inputs, reconnect never repeats a write, in-flight save
   await expect(page.getByLabel('회사명')).toHaveValue('오프라인 회사')
   await context.setOffline(false)
   expect(releaseSave).toBeNull()
+  // Establish the waiting update before deliberately holding a fetch open.
+  await update(page)
   await page.getByRole('button', { name: '저장', exact: true }).click()
   await expect.poll(() => !!releaseSave).toBe(true)
-  await update(page)
   await expect(page.getByRole('button', { name: '업데이트', exact: true })).toBeDisabled()
   releaseSave()
   await expect(page.getByRole('dialog')).toHaveCount(0)
