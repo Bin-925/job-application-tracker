@@ -22,17 +22,22 @@ class ScheduleIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
 
+    private org.springframework.test.web.servlet.ResultActions perform(
+            org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request) throws Exception {
+        return mvc.perform(request.with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()));
+    }
+
     private String account(String name) throws Exception {
         String credentials = json.writeValueAsString(Map.of("username", name, "password", "Test1234", "nickname", name));
-        mvc.perform(post("/api/v1/members/join").contentType(MediaType.APPLICATION_JSON).content(credentials))
+        perform(post("/api/v1/members/join").contentType(MediaType.APPLICATION_JSON).content(credentials))
                 .andExpect(status().isCreated());
-        return json.readTree(mvc.perform(post("/api/v1/members/login").contentType(MediaType.APPLICATION_JSON)
-                .content(credentials)).andReturn().getResponse().getContentAsString()).get("accessToken").asText();
+        return perform(post("/api/v1/members/login").contentType(MediaType.APPLICATION_JSON)
+                .content(credentials)).andExpect(status().isOk()).andReturn().getResponse().getCookie("SESSION").getValue();
     }
-    private Long application(String token, boolean legacy) throws Exception {
+    private Long application(String sessionId, boolean legacy) throws Exception {
         var fields = new java.util.HashMap<String, Object>(Map.of("company", "Example", "position", "Backend", "status", "TO_APPLY"));
         if (legacy) fields.put("interviewDate", LocalDate.now().plusDays(1).toString());
-        return json.readTree(mvc.perform(post("/api/v1/applications").header("Authorization", "Bearer " + token)
+        return json.readTree(perform(post("/api/v1/applications").cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId))
                 .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(fields)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString()).get("id").asLong();
     }
@@ -40,26 +45,26 @@ class ScheduleIntegrationTest {
         return json.writeValueAsString(Map.of("type", "INTERVIEW", "title", title,
                 "date", LocalDate.now().plusDays(1).toString(), "state", "SCHEDULED"));
     }
-    private JsonNode add(String token, Long id, String title) throws Exception {
-        return json.readTree(mvc.perform(post("/api/v1/applications/" + id + "/schedules")
-                .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+    private JsonNode add(String sessionId, Long id, String title) throws Exception {
+        return json.readTree(perform(post("/api/v1/applications/" + id + "/schedules")
+                .cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content(schedule(title))).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
     }
 
     @Test void multipleSchedulesHaveIndependentLifecycle() throws Exception {
-        String token = account("scheduser");
-        Long id = application(token, false);
-        add(token, id, "First");
-        JsonNode response = add(token, id, "Second");
+        String sessionId = account("scheduser");
+        Long id = application(sessionId, false);
+        add(sessionId, id, "First");
+        JsonNode response = add(sessionId, id, "Second");
         assertThat(response.get("schedules")).hasSize(2);
         JsonNode event = response.get("schedules").get(0);
         String path = "/api/v1/applications/" + id + "/schedules/" + event.get("id").asLong();
         var payload = json.createObjectNode().put("type", "INTERVIEW").put("title", "First updated")
                 .put("date", LocalDate.now().plusDays(2).toString()).put("state", "COMPLETED")
                 .put("version", event.get("version").asLong());
-        mvc.perform(put(path).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        perform(put(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content(payload.toString())).andExpect(status().isOk());
-        mvc.perform(put(path).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        perform(put(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content(payload.toString())).andExpect(status().isConflict());
     }
 
@@ -67,68 +72,70 @@ class ScheduleIntegrationTest {
         String owner = account("owner11"), stranger = account("other11");
         Long id = application(owner, false);
         Long eventId = add(owner, id, "Private").get("schedules").get(0).get("id").asLong();
-        mvc.perform(post("/api/v1/applications/" + id + "/schedules").header("Authorization", "Bearer " + stranger)
+        perform(post("/api/v1/applications/" + id + "/schedules").cookie(new jakarta.servlet.http.Cookie("SESSION", stranger))
                 .contentType(MediaType.APPLICATION_JSON).content(schedule("Invalid"))).andExpect(status().isForbidden());
-        mvc.perform(delete("/api/v1/applications/" + id + "/schedules/" + eventId).header("Authorization", "Bearer " + stranger))
+        perform(delete("/api/v1/applications/" + id + "/schedules/" + eventId).cookie(new jakarta.servlet.http.Cookie("SESSION", stranger)))
                 .andExpect(status().isForbidden());
     }
 
     @Test void staleApplicationEditDoesNotOverwriteNewerData() throws Exception {
-        String token = account("version11");
-        Long id = application(token, false);
+        String sessionId = account("version11");
+        Long id = application(sessionId, false);
         var payload = json.createObjectNode().put("company", "Edited").put("position", "Backend")
                 .put("status", "TO_APPLY").put("version", 0);
         String path = "/api/v1/applications/" + id;
-        mvc.perform(put(path).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        perform(put(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content(payload.toString())).andExpect(status().isOk()).andExpect(jsonPath("$.version").value(1));
-        mvc.perform(put(path).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        perform(put(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content(payload.toString())).andExpect(status().isConflict());
     }
 
     @Test void legacyConversionIsAtomicAndDoesNotDuplicate() throws Exception {
-        String token = account("legacy11");
-        Long id = application(token, true);
+        String sessionId = account("legacy11");
+        Long id = application(sessionId, true);
         String path = "/api/v1/applications/" + id + "/legacy-schedules/INTERVIEW";
-        mvc.perform(put(path).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        perform(put(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content(schedule("First interview"))).andExpect(status().isOk())
                 .andExpect(jsonPath("$.interviewDate").isEmpty()).andExpect(jsonPath("$.schedules.length()").value(1));
-        mvc.perform(put(path).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        perform(put(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content(schedule("Duplicate"))).andExpect(status().isNotFound());
     }
 
     @Test void statusChangeRequiresAppliedDateAndPreservesOriginal() throws Exception {
-        String token = account("status11");
-        Long id = application(token, false);
+        String sessionId = account("status11");
+        Long id = application(sessionId, false);
         String path = "/api/v1/applications/" + id + "/status";
-        mvc.perform(patch(path).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        perform(patch(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"APPLIED\"}")).andExpect(status().isBadRequest());
         String day = LocalDate.now().minusDays(3).toString();
-        mvc.perform(patch(path).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        perform(patch(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(Map.of("status", "APPLIED", "appliedDate", day))))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.appliedDate").value(day));
-        mvc.perform(patch(path).header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+        perform(patch(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
                 .content(json.writeValueAsString(Map.of("status", "INTERVIEW", "appliedDate", LocalDate.now().toString()))))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.appliedDate").value(day)).andExpect(jsonPath("$.schedules.length()").value(0));
     }
 
     @Test void invalidScheduleAndFutureAppliedDateAreRejected() throws Exception {
-        String token = account("valid11");
-        Long id = application(token, false);
-        mvc.perform(post("/api/v1/applications/" + id + "/schedules").header("Authorization", "Bearer " + token)
+        String sessionId = account("valid11");
+        Long id = application(sessionId, false);
+        perform(post("/api/v1/applications/" + id + "/schedules").cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId))
                 .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"INTERVIEW\",\"title\":\"\",\"state\":\"SCHEDULED\"}"))
                 .andExpect(status().isBadRequest());
-        mvc.perform(patch("/api/v1/applications/" + id + "/status").header("Authorization", "Bearer " + token)
+        perform(patch("/api/v1/applications/" + id + "/status").cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId))
                 .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("status", "APPLIED", "appliedDate", LocalDate.now().plusDays(1).toString()))))
                 .andExpect(status().isBadRequest());
     }
 
     @Test void applicationDeletionCascadesAndAccountDeletionWorksWithData() throws Exception {
-        String token = account("delete11");
-        Long id = application(token, false);
-        add(token, id, "Interview");
-        mvc.perform(delete("/api/v1/applications/" + id).header("Authorization", "Bearer " + token)).andExpect(status().isNoContent());
-        Long second = application(token, false);
-        add(token, second, "Interview");
-        mvc.perform(delete("/api/v1/members/me").header("Authorization", "Bearer " + token)).andExpect(status().isNoContent());
+        String sessionId = account("delete11");
+        Long id = application(sessionId, false);
+        add(sessionId, id, "Interview");
+        perform(delete("/api/v1/applications/" + id).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId))).andExpect(status().isNoContent());
+        Long second = application(sessionId, false);
+        add(sessionId, second, "Interview");
+        perform(delete("/api/v1/members/me").cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"currentPassword\":\"Test1234\"}"))
+                .andExpect(status().isNoContent());
     }
 }

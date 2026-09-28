@@ -23,11 +23,6 @@ jobs:
           java-version: "21"
           cache: gradle
 
-      - name: Create dummy secret for tests
-        run: |
-          echo "jwt:" > src/main/resources/application-secret.yml
-          echo "  secret: ci-dummy-secret-key-not-real-please-ignore-123456" >> src/main/resources/application-secret.yml
-
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 

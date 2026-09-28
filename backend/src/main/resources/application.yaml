@@ -1,6 +1,11 @@
 spring:
   config:
     import: optional:application-secret.yml
+  session:
+    timeout: 7d
+    jdbc:
+      initialize-schema: always
+      schema: classpath:db/session-mysql.sql
   # 기본 프로파일 = 로컬 개발(MySQL)
   datasource:
     url: jdbc:mysql://localhost:3306/jobtracker?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
@@ -13,5 +18,3 @@ spring:
     properties:
       hibernate:
         format_sql: true
-jwt:
-  expiration-ms: 3600000

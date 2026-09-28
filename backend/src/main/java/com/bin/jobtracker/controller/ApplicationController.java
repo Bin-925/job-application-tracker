@@ -25,30 +25,30 @@ public class ApplicationController {
 
     @PostMapping
     public ResponseEntity<ApplicationResponse> create(
-            @AuthenticationPrincipal Long memberId,
+            @AuthenticationPrincipal(expression = "memberId") Long memberId,
             @RequestBody @Valid ApplicationCreateRequest req) {
         Application app = applicationService.create(memberId, req);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApplicationResponse.from(app));
     }
 
     @GetMapping
-    public List<ApplicationResponse> list(@AuthenticationPrincipal Long memberId) {
+    public List<ApplicationResponse> list(@AuthenticationPrincipal(expression = "memberId") Long memberId) {
         return applicationService.getMyApplications(memberId);
     }
 
     @GetMapping("/stats")
-    public Map<ApplicationStatus, Long> stats(@AuthenticationPrincipal Long memberId) {
+    public Map<ApplicationStatus, Long> stats(@AuthenticationPrincipal(expression = "memberId") Long memberId) {
         return applicationService.getStats(memberId);
     }
 
     @GetMapping("/{id}")
-    public ApplicationResponse get(@AuthenticationPrincipal Long memberId, @PathVariable Long id) {
+    public ApplicationResponse get(@AuthenticationPrincipal(expression = "memberId") Long memberId, @PathVariable Long id) {
         return ApplicationResponse.from(applicationService.getMyApplication(memberId, id));
     }
 
     @PutMapping("/{id}")
     public ApplicationResponse update(
-            @AuthenticationPrincipal Long memberId,
+            @AuthenticationPrincipal(expression = "memberId") Long memberId,
             @PathVariable Long id,
             @RequestBody @Valid ApplicationUpdateRequest req) {
         return ApplicationResponse.from(applicationService.update(memberId, id, req));
@@ -56,7 +56,7 @@ public class ApplicationController {
 
     @PatchMapping("/{id}/status")
     public ApplicationResponse changeStatus(
-            @AuthenticationPrincipal Long memberId,
+            @AuthenticationPrincipal(expression = "memberId") Long memberId,
             @PathVariable Long id,
             @RequestBody @Valid StatusUpdateRequest req) {
         return ApplicationResponse.from(applicationService.changeStatus(memberId, id, req));
@@ -64,13 +64,13 @@ public class ApplicationController {
 
     @PostMapping("/{id}/schedules")
     @ResponseStatus(HttpStatus.CREATED)
-    public ApplicationResponse addSchedule(@AuthenticationPrincipal Long memberId,
+    public ApplicationResponse addSchedule(@AuthenticationPrincipal(expression = "memberId") Long memberId,
             @PathVariable Long id, @RequestBody @Valid com.bin.jobtracker.dto.ScheduleRequest request) {
         return ApplicationResponse.from(applicationService.addSchedule(memberId, id, request));
     }
 
     @PutMapping("/{id}/schedules/{scheduleId}")
-    public ApplicationResponse updateSchedule(@AuthenticationPrincipal Long memberId,
+    public ApplicationResponse updateSchedule(@AuthenticationPrincipal(expression = "memberId") Long memberId,
             @PathVariable Long id, @PathVariable Long scheduleId,
             @RequestBody @Valid com.bin.jobtracker.dto.ScheduleRequest request) {
         return ApplicationResponse.from(applicationService.updateSchedule(memberId, id, scheduleId, request));
@@ -78,21 +78,21 @@ public class ApplicationController {
 
     @DeleteMapping("/{id}/schedules/{scheduleId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteSchedule(@AuthenticationPrincipal Long memberId,
+    public void deleteSchedule(@AuthenticationPrincipal(expression = "memberId") Long memberId,
             @PathVariable Long id, @PathVariable Long scheduleId) {
         applicationService.deleteSchedule(memberId, id, scheduleId);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @AuthenticationPrincipal Long memberId,
+            @AuthenticationPrincipal(expression = "memberId") Long memberId,
             @PathVariable Long id) {
         applicationService.delete(memberId, id);
         return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}/legacy-schedules/{type}")
-    public ApplicationResponse replaceLegacy(@AuthenticationPrincipal Long memberId,
+    public ApplicationResponse replaceLegacy(@AuthenticationPrincipal(expression = "memberId") Long memberId,
             @PathVariable Long id, @PathVariable com.bin.jobtracker.entity.ScheduleEvent.Type type,
             @RequestBody @Valid com.bin.jobtracker.dto.ScheduleRequest request) {
         return ApplicationResponse.from(applicationService.replaceLegacySchedule(memberId, id, type, request));
@@ -100,7 +100,7 @@ public class ApplicationController {
 
     @DeleteMapping("/{id}/legacy-schedules/{type}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteLegacy(@AuthenticationPrincipal Long memberId,
+    public void deleteLegacy(@AuthenticationPrincipal(expression = "memberId") Long memberId,
             @PathVariable Long id, @PathVariable com.bin.jobtracker.entity.ScheduleEvent.Type type) {
         applicationService.replaceLegacySchedule(memberId, id, type, null);
     }

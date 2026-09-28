@@ -3,6 +3,16 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import { Workspace } from './workspace/Workspace'
 import { AuthPage } from './workspace/AuthPage'
 import { Today, Applications, Calendar, Detail, Settings, ApplicationAction } from './workspace/Pages'
+import { SessionProvider } from './store/SessionProvider'
+import { useSession } from './store/sessionContext'
+
+function ProtectedWorkspace() {
+  const { status, member, refreshSession } = useSession()
+  if (status === 'checking') return <p className="empty" role="status">로그인 확인 중...</p>
+  if (status === 'error') return <main className="empty"><p role="alert">서버에 연결할 수 없습니다.</p><button onClick={refreshSession}>다시 시도</button></main>
+  if (!member) return <Navigate to="/login" replace />
+  return <Workspace key={member.id} />
+}
 
 function ScrollReset() {
   const { pathname } = useLocation()
@@ -11,10 +21,10 @@ function ScrollReset() {
 }
 
 export default function App() {
-  return <BrowserRouter><ScrollReset /><Routes>
+  return <SessionProvider><BrowserRouter><ScrollReset /><Routes>
     <Route path="/login" element={<AuthPage />} />
     <Route path="/join" element={<AuthPage join />} />
-    <Route element={<Workspace />}>
+    <Route element={<ProtectedWorkspace />}>
       <Route index element={<Today />} />
       <Route path="applications" element={<Applications />} />
       <Route path="applications/new" element={<ApplicationAction />} />
@@ -27,5 +37,5 @@ export default function App() {
       <Route path="notifications" element={<Navigate to="/calendar" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
-  </Routes></BrowserRouter>
+  </Routes></BrowserRouter></SessionProvider>
 }

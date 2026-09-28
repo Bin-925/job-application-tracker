@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarPlus, Trash2, X } from 'lucide-react'
 import api from '../api/client'
-import { removeToken } from '../store/auth'
+import { notifySessionChanged } from '../store/auth'
 import { dateKey, errorMessage, safeLink, statuses } from '../domain/tracker'
 
 export function Editor({ kind, app, event: schedule, status, date, count, apps, onClose, onSaved }) {
@@ -47,8 +47,8 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
         navigate('/applications', { replace: true })
         await onSaved('지원 내역을 삭제했습니다.')
       } else if (kind === 'withdraw') {
-        await api.delete('/members/me')
-        removeToken(); onClose(); navigate('/login', { replace: true })
+        await api.delete('/members/me', { data: { currentPassword: values.currentPassword } })
+        notifySessionChanged(); onClose(); navigate('/login', { replace: true })
       }
     } catch (failure) { setError(failure.response || failure.request ? errorMessage(failure) : failure.message) } finally { setBusy(false) }
   }
@@ -88,7 +88,7 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
           {schedule && <label>일정 상태<select name="state" defaultValue={schedule.state}><option value="SCHEDULED">예정</option><option value="COMPLETED">완료</option><option value="CANCELLED">취소</option></select></label>}
         </>}
         {kind === 'delete' && <><p><strong>{app.company}</strong> 지원 내역과 연결된 일정을 삭제합니다.</p><p className="muted">삭제한 기록은 복구할 수 없습니다.</p><label className="check-label"><input type="checkbox" required />삭제할 내용을 확인했습니다.</label></>}
-        {kind === 'withdraw' && <><p>계정과 지원 내역 {count}건, 연결된 일정이 모두 삭제됩니다.</p><p className="muted">탈퇴한 계정은 복구할 수 없습니다.</p><label className="check-label"><input type="checkbox" required />모든 기록 삭제에 동의합니다.</label></>}
+        {kind === 'withdraw' && <><p>계정과 지원 내역 {count}건, 연결된 일정이 모두 삭제됩니다.</p><p className="muted">탈퇴한 계정은 복구할 수 없습니다.</p><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" required /></label><label className="check-label"><input type="checkbox" required />모든 기록 삭제에 동의합니다.</label></>}
       </fieldset>
       {error && <p className="error" role="alert">{error}</p>}
       <div className="editor-footer"><button type="button" onClick={onClose} disabled={busy}>취소</button><button className={['delete', 'withdraw'].includes(kind) ? 'danger-fill' : 'primary'} disabled={busy || (kind === 'schedule' && !apps.length)}>{busy ? '저장 중…' : ['delete', 'withdraw'].includes(kind) ? '삭제 확인' : '저장'}{kind === 'schedule' && <CalendarPlus size={17} />}</button></div>

@@ -9,6 +9,11 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member extends BaseEntity {
+    @Column(nullable = false, columnDefinition = "bigint default 0")
+    private long authVersion;
+
+    public void revokeSessions() { authVersion++; }
+
     @Column(unique = true, nullable = false)
     private String username;
     @Column(nullable = false)

@@ -9,6 +9,11 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    public ResponseEntity<?> handleCredentials(Exception e) {
+        return build(HttpStatus.UNAUTHORIZED, "아이디 또는 비밀번호를 확인해 주세요.");
+    }
+
     @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidation(org.springframework.web.bind.MethodArgumentNotValidException e) {
         return build(HttpStatus.BAD_REQUEST, "입력값을 확인해 주세요.");
@@ -31,7 +36,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<?> handleBadRequest(IllegalArgumentException e) {
-        return build(HttpStatus.BAD_REQUEST, e.getMessage());   // 회원가입 중복/로그인 실패 등도 깔끔한 400으로
+        return build(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 
     private ResponseEntity<Map<String, Object>> build(HttpStatus status, String message) {
