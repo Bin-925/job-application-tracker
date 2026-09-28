@@ -127,7 +127,19 @@ jobs:
                 }
               })
             });
-            if (!response.ok) throw new Error(`Gemini API returned HTTP ${response.status}. Check API access, model, quota and billing; no review was published.`);
+            if (!response.ok) {
+              // Keep response bodies and credentials out of public Actions logs.
+              const guidance = {
+                400: 'Check request format and model configuration.',
+                401: 'Check the repository API key secret.',
+                403: 'Check key restrictions and project API access.',
+                404: 'Check model availability and API endpoint.',
+                429: 'Check project quota and billing before retrying.',
+                500: 'Provider error; retry later.',
+                503: 'Provider unavailable; retry later.'
+              };
+              throw new Error(`Gemini API returned HTTP ${response.status}. ${guidance[response.status] || 'Check API access and configuration.'} No review was published.`);
+            }
             const interaction = await response.json();
             if (interaction.status !== 'completed') throw new Error('Gemini did not complete the review. No review was published.');
             const output = (interaction.steps || [])
@@ -169,4 +181,4 @@ jobs:
               'AI output may be incorrect. This is not approval, a full security audit, or a replacement for tests and human review.'
             ].join('\n\n');
             await github.rest.pulls.createReview({ ...repo, pull_number: number, commit_id: pr.head.sha, event: 'COMMENT', body, comments });
-            await core.summary.addRaw(`Published a Gemini review for PR #${number}: ${comments.length} findings across ${selected.length} files.`).write();
+            await core.summary.addRaw(`Published a Gemini review for PR #${number}: ${comments.length} findings across ${selected.length} files. Model: ${prose(model)}. This confirms API execution, not correctness or a billing total.`).write();
