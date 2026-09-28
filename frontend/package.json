@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test src/domain/*.test.js",
+    "icons": "node scripts/generate-icons.mjs",
+    "check:pwa": "node scripts/check-pwa.mjs",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
