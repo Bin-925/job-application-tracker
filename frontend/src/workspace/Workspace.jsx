@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { CalendarDays, House, BriefcaseBusiness, UserRound, NotebookPen, Plus, RefreshCw, WifiOff } from 'lucide-react'
 import api from '../api/client'
 import { errorMessage } from '../domain/tracker'
 import { Editor } from './Editor'
 import { PwaStatus } from './PwaStatus'
+import { SessionNotice } from './SessionNotice'
 
 export function Workspace() {
   const { pathname } = useLocation()
@@ -16,17 +17,27 @@ export function Workspace() {
   const [notice, setNotice] = useState('')
   const [online, setOnline] = useState(navigator.onLine)
   const [now, setNow] = useState(new Date())
-  const refresh = useCallback(() => api.get('/applications')
-    .then(response => { setApps(response.data); setError(''); setLoaded(true) })
-    .catch(failure => setError(errorMessage(failure)))
-    .finally(() => setLoading(false)), [])
+  const revision = useRef(0)
+  const refresh = useCallback(async () => {
+    const current = ++revision.current
+    try {
+      const response = await api.get('/applications')
+      if (current === revision.current) { setApps(response.data); setError(''); setLoaded(true) }
+    } catch (failure) {
+      if (current === revision.current) setError(errorMessage(failure))
+    } finally {
+      if (current === revision.current) setLoading(false)
+    }
+  }, [])
   useEffect(() => {
-    refresh()
+    let active = true
+    const requests = revision
+    queueMicrotask(() => { if (active) refresh() })
     const updateNetwork = () => { setOnline(navigator.onLine); if (navigator.onLine) refresh() }
     const timer = setInterval(() => setNow(new Date()), 30000)
     window.addEventListener('online', updateNetwork)
     window.addEventListener('offline', updateNetwork)
-    return () => { clearInterval(timer); window.removeEventListener('online', updateNetwork); window.removeEventListener('offline', updateNetwork) }
+    return () => { active = false; ++requests.current; clearInterval(timer); window.removeEventListener('online', updateNetwork); window.removeEventListener('offline', updateNetwork) }
   }, [refresh])
   useEffect(() => { if (notice) { const timer = setTimeout(() => setNotice(''), 5000); return () => clearTimeout(timer) } }, [notice])
   const context = { apps, now, refresh, open: setEditor, notify: setNotice }
@@ -39,6 +50,7 @@ export function Workspace() {
       <header className="mobile-header"><NavLink to="/" className="brand"><NotebookPen size={22} />취준노트</NavLink><button className="icon" title="새로고침" onClick={refresh}><RefreshCw size={19} /></button></header>
       {!online && <div role="status" className="notice"><WifiOff size={18} />오프라인입니다. 변경 사항을 저장하려면 연결이 필요합니다.</div>}
       <PwaStatus />
+      <SessionNotice />
       {error && <section className="notice"><p role="alert">{error}</p><button onClick={refresh}><RefreshCw size={16} />다시 시도</button></section>}
       {loading ? <p className="empty" role="status">지원 내역을 불러오는 중…</p> : loaded && <Outlet context={context} />}
       {!pathname.startsWith('/mypage') && <button className="fab" title="지원 추가" aria-label="지원 추가" onClick={() => setEditor({ kind: 'application' })}><Plus size={26} /></button>}

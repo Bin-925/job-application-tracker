@@ -4,19 +4,35 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
 let server, origin, revision, releaseSave
+let currentMember, memberStatus, holdLists, pendingLists, listStatuses
 const root = path.resolve('dist')
 const member = { id: 1, username: 'pwatest', nickname: '테스트' }
 
 test.beforeEach(async () => {
   revision = 1
   releaseSave = null
+  currentMember = member
+  memberStatus = 200
+  holdLists = false
+  pendingLists = []
+  listStatuses = []
   server = createServer(async (request, response) => {
     const pathname = new URL(request.url, 'http://localhost').pathname
     response.setHeader('Cache-Control', 'no-store')
     if (pathname.startsWith('/api/')) {
       response.setHeader('Content-Type', 'application/json')
       if (pathname.endsWith('/csrf')) return response.end(JSON.stringify({ headerName: 'X-CSRF-TOKEN', token: 'fixture' }))
-      if (pathname.endsWith('/me')) return response.end(JSON.stringify(member))
+      if (pathname.endsWith('/me')) {
+        if (memberStatus === 0) return response.destroy()
+        response.statusCode = memberStatus
+        return response.end(JSON.stringify(currentMember))
+      }
+      if (request.method === 'GET' && pathname.endsWith('/applications') && holdLists) {
+        response.statusCode = listStatuses[pendingLists.length] || 200
+        response.flushHeaders()
+        pendingLists.push(response)
+        return
+      }
       if (request.method === 'GET') return response.end('[]')
       if (request.method === 'POST' && pathname.endsWith('/applications')) await new Promise(resolve => { releaseSave = resolve })
       return response.end(JSON.stringify(member))
@@ -137,3 +153,101 @@ test('offline save keeps inputs, reconnect never repeats a write, in-flight save
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByRole('button', { name: '업데이트', exact: true })).toBeEnabled()
 })
+
+for (const status of [503, 0]) {
+  test(`background session failure ${status} preserves input and blocks saving until verified`, async ({ page }) => {
+    await open(page)
+    await page.getByRole('button', { name: '지원 추가', exact: true }).click()
+    await page.getByLabel('회사명').fill('보존할 초안')
+    await page.getByLabel('직무', { exact: true }).fill('개발자')
+    memberStatus = status
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+    await expect(page.getByRole('dialog').getByRole('alert')).toContainText('로그인 상태를 다시 확인하지 못했습니다')
+    await expect(page.getByLabel('회사명')).toHaveValue('보존할 초안')
+    await expect(page.getByRole('button', { name: '저장', exact: true })).toBeDisabled()
+    expect(releaseSave).toBeNull()
+    if (status === 503) {
+      for (const width of [360, 1440]) {
+        await page.setViewportSize({ width, height: 960 })
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+        const bounds = await page.getByRole('dialog').boundingBox()
+        expect(bounds.x).toBeGreaterThanOrEqual(0)
+        expect(bounds.x + bounds.width).toBeLessThanOrEqual(width)
+        await page.screenshot({ path: test.info().outputPath(`session-recovery-${width}.png`), fullPage: true })
+      }
+    }
+    memberStatus = 200
+    await page.getByRole('dialog').getByRole('button', { name: '로그인 다시 확인', exact: true }).click()
+    await expect(page.getByRole('button', { name: '저장', exact: true })).toBeEnabled()
+    await expect(page.getByLabel('회사명')).toHaveValue('보존할 초안')
+    memberStatus = 401
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+    await expect(page).toHaveURL(origin + '/login')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+  })
+}
+
+test('initial session failure blocks private UI and retry recovers', async ({ page }) => {
+  memberStatus = 503
+  await page.goto(origin)
+  await expect(page.getByRole('alert')).toContainText('서버에 연결할 수 없습니다')
+  await expect(page.getByRole('button', { name: '지원 추가', exact: true })).toHaveCount(0)
+  memberStatus = 200
+  await page.getByRole('button', { name: '다시 시도', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '오늘', exact: true })).toBeVisible()
+})
+
+test('account inputs survive failed verification and recover without persistent drafts', async ({ page }) => {
+  await open(page, '/mypage')
+  await page.getByRole('textbox', { name: '닉네임', exact: true }).fill('입력보존')
+  await page.getByLabel('현재 비밀번호').fill('Temporary9!')
+  memberStatus = 503
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page.getByRole('alert')).toContainText('로그인 상태를 다시 확인하지 못했습니다')
+  await expect(page.getByRole('textbox', { name: '닉네임', exact: true })).toHaveValue('입력보존')
+  await expect(page.getByLabel('현재 비밀번호')).toHaveValue('Temporary9!')
+  await expect(page.getByRole('button', { name: '저장', exact: true })).toBeDisabled()
+  await expect(page.getByRole('button', { name: '비밀번호 변경', exact: true })).toBeDisabled()
+  const storage = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }))
+  expect(storage).not.toContain('Temporary9!')
+  expect(storage).not.toContain('입력보존')
+  memberStatus = 200
+  await page.getByRole('button', { name: '로그인 다시 확인', exact: true }).click()
+  await expect(page.getByRole('button', { name: '저장', exact: true })).toBeEnabled()
+  await expect(page.getByRole('textbox', { name: '닉네임', exact: true })).toHaveValue('입력보존')
+})
+
+test('a different confirmed member cannot inherit the previous draft', async ({ page }) => {
+  await open(page)
+  await page.getByRole('button', { name: '지원 추가', exact: true }).click()
+  await page.getByLabel('회사명').fill('이전 계정 초안')
+  currentMember = { id: 2, username: 'other', nickname: '다른계정' }
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('button', { name: '지원 추가', exact: true }).click()
+  await expect(page.getByLabel('회사명')).toBeEmpty()
+})
+
+for (const oldStatus of [200, 503]) {
+  test(`an older list response ${oldStatus} cannot overwrite the latest result`, async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 960 })
+    await open(page)
+    await page.getByRole('link', { name: '지원', exact: true }).click()
+    holdLists = true
+    listStatuses = [oldStatus, 200]
+    await page.getByRole('button', { name: '새로고침', exact: true }).click()
+    await expect.poll(() => pendingLists.length).toBe(1)
+    await page.getByRole('button', { name: '새로고침', exact: true }).click()
+    await expect.poll(() => pendingLists.length).toBe(2)
+    const application = { id: 1, version: 0, company: '최신 회사', position: '개발자', status: 'TO_APPLY', schedules: [] }
+    pendingLists[1].end(JSON.stringify([application]))
+    await expect(page.getByRole('heading', { name: '최신 회사', exact: true })).toBeVisible()
+    const oldResponse = page.waitForEvent('requestfinished', request => request.url().endsWith('/applications'))
+    pendingLists[0].end(JSON.stringify(oldStatus === 200 ? [] : { message: '오래된 오류' }))
+    await oldResponse
+    // Flush the already delivered response through React before asserting absence.
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    await expect(page.getByRole('heading', { name: '최신 회사', exact: true })).toBeVisible()
+    await expect(page.getByText('오래된 오류', { exact: true })).toHaveCount(0)
+  })
+}
