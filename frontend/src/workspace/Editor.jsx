@@ -4,6 +4,7 @@ import { CalendarPlus, Trash2, X } from 'lucide-react'
 import api from '../api/client'
 import { notifySessionChanged } from '../store/auth'
 import { dateKey, errorMessage, safeLink, statuses } from '../domain/tracker'
+import { useFormProtection } from './useFormProtection'
 
 export function Editor({ kind, app, event: schedule, status, date, count, apps, onClose, onSaved }) {
   const dialog = useRef(null)
@@ -14,6 +15,10 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
   const [type, setType] = useState(schedule?.type || 'INTERVIEW')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [withInterview, setWithInterview] = useState(false)
+  const protection = useFormProtection(busy, true, kind === 'status' && status !== app?.status)
+  function close() {
+    if (!busy && (!protection.dirty || window.confirm('작성 중인 내용을 버리고 닫을까요?'))) onClose()
+  }
   const title = { application: app ? '지원 수정' : '지원 추가', schedule: schedule ? '일정 수정' : '일정 추가', status: '상태 변경', delete: '지원 삭제', withdraw: '회원 탈퇴' }[kind]
   useEffect(() => { const element = dialog.current; element.showModal(); return () => element.close() }, [])
 
@@ -61,9 +66,9 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
     } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
   }
 
-  return <dialog ref={dialog} className="editor" aria-labelledby="editor-title" onCancel={e => { e.preventDefault(); if (!busy) onClose() }}>
-    <div className="editor-heading"><h2 id="editor-title">{title}</h2><button className="icon" title="닫기" type="button" disabled={busy} onClick={onClose}><X size={22} /></button></div>
-    <form onSubmit={submit}>
+  return <dialog ref={dialog} className="editor" aria-labelledby="editor-title" onCancel={e => { e.preventDefault(); close() }}>
+    <div className="editor-heading"><h2 id="editor-title">{title}</h2><button className="icon" title="닫기" type="button" disabled={busy} onClick={close}><X size={22} /></button></div>
+    <form onSubmit={submit} onChange={protection.markDirty}>
       <fieldset disabled={busy}>
         {kind === 'application' && <>
           <label>회사명<input autoFocus name="company" defaultValue={app?.company} required maxLength={100} /></label>
@@ -91,7 +96,7 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
         {kind === 'withdraw' && <><p>계정과 지원 내역 {count}건, 연결된 일정이 모두 삭제됩니다.</p><p className="muted">탈퇴한 계정은 복구할 수 없습니다.</p><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" required /></label><label className="check-label"><input type="checkbox" required />모든 기록 삭제에 동의합니다.</label></>}
       </fieldset>
       {error && <p className="error" role="alert">{error}</p>}
-      <div className="editor-footer"><button type="button" onClick={onClose} disabled={busy}>취소</button><button className={['delete', 'withdraw'].includes(kind) ? 'danger-fill' : 'primary'} disabled={busy || (kind === 'schedule' && !apps.length)}>{busy ? '저장 중…' : ['delete', 'withdraw'].includes(kind) ? '삭제 확인' : '저장'}{kind === 'schedule' && <CalendarPlus size={17} />}</button></div>
+      <div className="editor-footer"><button type="button" onClick={close} disabled={busy}>취소</button><button className={['delete', 'withdraw'].includes(kind) ? 'danger-fill' : 'primary'} disabled={busy || (kind === 'schedule' && !apps.length)}>{busy ? '저장 중…' : ['delete', 'withdraw'].includes(kind) ? '삭제 확인' : '저장'}{kind === 'schedule' && <CalendarPlus size={17} />}</button></div>
       {schedule && <div className="delete-schedule">{confirmDelete ? <><span>이 일정을 삭제할까요?</span><button type="button" className="danger" disabled={busy} onClick={deleteSchedule}>삭제 확인</button><button type="button" disabled={busy} onClick={() => setConfirmDelete(false)}>유지</button></> : <button type="button" className="text-button danger" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />일정 삭제</button>}</div>}
     </form>
   </dialog>
