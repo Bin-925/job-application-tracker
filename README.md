@@ -198,6 +198,14 @@ Gemini는 같은 저장소의 열린 일반 PR(`dev`/`main` 대상)의 변경된
 - 자동 승인·병합하지 않으며, 사용량·과금은 Google 계정에서 별도로 확인해야 합니다.
 - [실제 리뷰 연결 PR #27](https://github.com/Bin-925/job-application-tracker/pull/27), [입력 보호 보강 PR #30](https://github.com/Bin-925/job-application-tracker/pull/30).
 
+## 로컬 부하 테스트
+
+k6로 실제 PostgreSQL API의 기본 여정·계정/권한·요청 제한·일반 부하·급증·단기 지속·대량 기록·동시 수정 8개 프로필을 검증합니다. Docker Desktop과 JDK 21, k6를 준비한 후 저장소 루트에서 `./scripts/Run-LoadTests.ps1`로 실행합니다.
+
+`jobtracker-load-postgres`는 기존 DB와 분리된 임시 컨테이너이며 테스트 후 중지됩니다. 최대 30 VU, 계정당 최대 500개 지원을 사용합니다. 로컬 측정은 운영 수용량 보장이 아닙니다. [실행 방법·안전 장치·검증 한계](docs/LOAD_TESTING.md)를 먼저 확인하세요.
+
+[2026-10-03 측정 결과](docs/LOAD_TEST_RESULTS_2026-10-03.md): 최종 8개 프로필 통과, 준비 요청 포함 총 40,188건, 예상하지 않은 응답 0건. 운영 부하나 장시간 안정성 검증 완료를 뜻하지 않습니다.
+
 ## 협업 흐름
 
 ```mermaid
