@@ -1,0 +1,23 @@
+name: jobtracker-load
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: jobtracker-load-postgres
+    labels:
+      com.jobtracker.purpose: load-test
+    environment:
+      POSTGRES_USER: jobtracker_load
+      POSTGRES_PASSWORD: ${LOAD_DB_PASSWORD:?Use scripts/Run-LoadTests.ps1}
+      POSTGRES_DB: postgres
+    ports:
+      - "127.0.0.1:15434:5432"
+    # Deliberately disposable. No existing project data or persistent volumes are mounted.
+    tmpfs:
+      - /var/lib/postgresql/data:size=536870912
+    mem_limit: 768m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobtracker_load -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

@@ -31,6 +31,8 @@ jobs:
           cache-dependency-path: .github/package-lock.json
       - run: npm ci --ignore-scripts
       - run: npm test
+      - name: Verify load-test safety configuration
+        run: node --test ../tests/load/config.test.mjs
 
   frontend:
     name: Frontend and PWA
