@@ -1,6 +1,6 @@
 # 문서 안내
 
-문서가 많아서 어떤 것이 최신인지 한눈에 보도록 정리했습니다. 기준일: 2026-09-28.
+문서가 많아서 어떤 것이 최신인지 한눈에 보도록 정리했습니다. 기준일: 2026-10-03.
 
 ## 1. 현재 기준 문서 (최신 유지)
 
@@ -13,6 +13,8 @@
 | [ADR](adr) | 주요 기술 결정과 대안 (0001 흐름·PWA, 0002 세션 인증, 0003 요청 제한·마이그레이션) |
 | [IMPLEMENTATION_STATUS](IMPLEMENTATION_STATUS.md) | 개발 현황과 출시 전 게이트 |
 | [CI_AND_AI_REVIEW](CI_AND_AI_REVIEW.md) | CI와 Gemini 리뷰 설정 |
+| [LOCAL_POSTGRESQL](LOCAL_POSTGRESQL.md) | 영구 개발 DB의 실행·중지·권한·보존·백업 |
+| [LOAD_TESTING](LOAD_TESTING.md) | 별도 테스트 DB로 실행하는 k6 시나리오와 한계 |
 | [AI_COLLABORATION](../AI_COLLABORATION.md) | AI 도구 활용 범위 |
 
 ## 2. 작업 기록 (작성 시점 기준, 수정하지 않음)
@@ -21,6 +23,7 @@
 |---|---|---|
 | [SESSION_AUTH_MIGRATION](SESSION_AUTH_MIGRATION.md) | 2026-09-24 | JWT → 세션 전환과 배포 전 확인 |
 | [POSTGRES_MIGRATION](POSTGRES_MIGRATION.md) | 2026-09-28 | PostgreSQL 이전·복원 절차 |
+| [LOAD_TEST_RESULTS_2026-10-03](LOAD_TEST_RESULTS_2026-10-03.md) | 2026-10-03 | k6 부하 테스트 결과 |
 | [PWA_UPDATE_PROTECTION](PWA_UPDATE_PROTECTION.md) | #19 | 업데이트와 입력 보호 |
 | [PWA_CI_REGRESSION](PWA_CI_REGRESSION.md) | #25 | 브라우저 테스트 대기 안정화 |
 | [DEPLOYMENT_COMPARISON](DEPLOYMENT_COMPARISON.md) | #20 | 배포 방식 비교 (선택 전) |

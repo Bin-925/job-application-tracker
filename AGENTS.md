@@ -25,7 +25,7 @@ pnpm install --frozen-lockfile
 pnpm lint && pnpm test && pnpm build && pnpm check:pwa
 pnpm test:e2e                 # build 후 실행
 
-# 로컬 실행 (demo H2)
+# 로컬 실행 (영구 PostgreSQL, Docker 필요; H2는 -Database demo)
 ./scripts/Start-Local.ps1
 ```
 
