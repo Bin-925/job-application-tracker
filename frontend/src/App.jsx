@@ -22,8 +22,8 @@ function ScrollReset() {
 
 export default function App() {
   return <SessionProvider><BrowserRouter><ScrollReset /><Routes>
-    <Route path="/login" element={<AuthPage />} />
-    <Route path="/join" element={<AuthPage join />} />
+    <Route path="/login" element={<AuthPage key="login" />} />
+    <Route path="/join" element={<AuthPage key="join" join />} />
     <Route element={<ProtectedWorkspace />}>
       <Route index element={<Today />} />
       <Route path="applications" element={<Applications />} />

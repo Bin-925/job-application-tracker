@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Bin-925/job-application-tracker/actions/workflows/ci.yml/badge.svg?branch=dev)
 
-> **2026-09-28 현재 `dev` 기준입니다.** 핵심 기능·세션 인증·PWA·CI·Gemini 실제 리뷰 연결을 구현하고 검증했습니다. 운영 환경으로의 이번 버전 전환, Web Push, 원스토어 출시는 아직 완료하지 않았습니다.
+> **2026-10-04 현재 `dev` 기준입니다.** 핵심 기능·세션 인증·PWA·CI·Gemini 실제 리뷰 연결을 구현하고 검증했습니다. 운영 환경으로의 이번 버전 전환, Web Push, 원스토어 출시는 아직 완료하지 않았습니다.
 >
 > 배포는 예산 결정 전 보류합니다. Railway 통합을 우선 고려하고 이후 EC2에서 AWS 운영을 직접 학습하려는 방향입니다. 환경 생성·결제·이전 일정은 아직 확정하지 않았습니다.
 
@@ -31,6 +31,7 @@
 | PWA | manifest·설치 아이콘·서비스 워커·업데이트 안내, 정적 자산 캐시, API NetworkOnly |
 | 입력 보호 | 작성/저장 중 업데이트 보류, 취소 확인, 오프라인 저장 실패 후 입력 유지, 재연결 시 쓰기 자동 재전송 없음 |
 | 연결 복구 | 일시적인 세션 재확인 실패 시 폼 유지·저장 제한·재확인 제공. 401·계정 변경 시 이전 계정 화면 제거 |
+| 인증 화면 전환 | 로그인·가입 간 오류·입력값 분리, 떠난 화면의 진행 중 요청 취소 및 늦은 응답 무시 |
 | 조회 일관성 | 여러 목록 조회가 겹쳐도 최신 요청의 성공·오류·로딩만 반영 |
 
 지원 상태: `TO_APPLY` → `APPLIED` → `DOC_PASSED` → `INTERVIEW` → `ACCEPTED` / `REJECTED`. 일반적인 흐름을 표현하며 모든 상태 이동을 강제하는 상태 머신은 아닙니다.
@@ -168,7 +169,7 @@ cd ..
 
 | 필수 CI | 검증 내용 |
 |---|---|
-| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 11개 |
+| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 14개 |
 | Backend tests and build | H2/단위·통합 테스트 55개와 bootJar |
 | PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 11개, 실제 백업/격리 복원 스크립트 검증 |
 | Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |

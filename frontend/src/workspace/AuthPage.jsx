@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, NotebookPen } from 'lucide-react'
 import api from '../api/client'
@@ -12,16 +12,26 @@ export function AuthPage({ join = false }) {
   const [params] = useSearchParams()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const pendingRequest = useRef(null)
+  useEffect(() => () => pendingRequest.current?.abort(), [])
   async function submit(event) {
     event.preventDefault()
     const data = Object.fromEntries(new FormData(event.currentTarget))
+    const request = new AbortController()
+    pendingRequest.current = request
     setBusy(true); setError('')
     try {
-      if (join) await api.post('/members/join', data)
-      await api.post('/members/login', { username: data.username, password: data.password })
+      if (join) await api.post('/members/join', data, { signal: request.signal })
+      if (request.signal.aborted) return
+      await api.post('/members/login', { username: data.username, password: data.password }, { signal: request.signal })
+      if (request.signal.aborted) return
       notifySessionChanged()
       navigate('/', { replace: true })
-    } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
+    } catch (failure) {
+      if (!request.signal.aborted) setError(errorMessage(failure))
+    } finally {
+      if (!request.signal.aborted) setBusy(false)
+    }
   }
   if (status === 'checking') return <p className="empty" role="status">로그인 확인 중...</p>
   if (member) return <Navigate to="/" replace />
