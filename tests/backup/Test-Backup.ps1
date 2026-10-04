@@ -46,6 +46,8 @@ try {
         $receipt.checks.scheduleDigest -ne $digests.schedule_event) { throw 'Restored records differ from the fixed source fixture.' }
     $sourceSessions = Invoke-BackupDocker @('exec',$source,'psql','-U','jobtracker_admin','-d','jobtracker','-X','-qAt','-c','SELECT count(*) FROM spring_session')
     if ($sourceSessions -ne '1') { throw 'Backup changed original sessions' }
+    $sourceTokens = Invoke-BackupDocker @('exec',$source,'psql','-U','jobtracker_admin','-d','jobtracker','-X','-qAt','-c','SELECT count(*) FROM recovery_email_verification')
+    if ($sourceTokens -ne '1') { throw 'Backup changed original verification tokens' }
     Write-Output 'PASS: Unicode/memo/date/version/ownership data digests, sequences and constraints, excluded sessions, unchanged source'
     $corrupt = Join-Path $output 'corrupt.dump'
     Copy-Item -LiteralPath $backup -Destination $corrupt

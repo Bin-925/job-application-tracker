@@ -11,3 +11,5 @@ INSERT INTO spring_session(primary_id,session_id,creation_time,last_access_time,
 VALUES ('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002',1,1,600,9999999999999,'backupfixture');
 INSERT INTO spring_session_attributes(session_primary_id,attribute_name,attribute_bytes)
 VALUES ('00000000-0000-0000-0000-000000000001','fixture',decode('010203','hex'));
+INSERT INTO recovery_email_verification(member_id,email,token_hash,auth_version,expires_at,issued_at)
+VALUES (41,'fixture@example.test',repeat('a',64),7,now() + interval '30 minutes',now());

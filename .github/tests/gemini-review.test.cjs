@@ -53,7 +53,10 @@ test('workflow has least privilege and does not check out PR code', () => {
   assert.equal(workflow.jobs.review.steps.length, 1);
   assert.match(workflow.jobs.review.steps[0].uses, /^actions\/github-script@[a-f0-9]{40}$/);
   const ci = YAML.parse(fs.readFileSync(path.join(__dirname, '../workflows/ci.yml'), 'utf8'));
-  assert.deepEqual(Object.keys(ci.jobs).sort(), ['automation', 'backend', 'frontend', 'postgres']);
+  assert.deepEqual(Object.keys(ci.jobs).sort(), ['automation', 'backend', 'backup-permissions', 'frontend', 'postgres']);
+  assert.equal(ci.jobs['backup-permissions']['runs-on'], 'windows-latest');
+  assert.equal(ci.jobs['backup-permissions'].steps[1].shell, 'pwsh');
+  assert.equal(ci.jobs['backup-permissions'].steps[1].run, './tests/backup/Test-BackupPermissions.ps1');
   assert.deepEqual(ci.permissions, { contents: 'read' });
 });
 
