@@ -338,8 +338,30 @@ test('cross-tab activation preserves an editor until explicit clean reload', asy
   await expect(page.getByRole('button', { name: '업데이트', exact: true })).toHaveCount(0)
 })
 
+test('password form starts collapsed and only discards drafts after confirmation', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 960 })
+  await open(page, '/mypage')
+  await expect(page.getByRole('button', { name: '비밀번호 변경 열기' })).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByLabel('현재 비밀번호')).toHaveCount(0)
+  await page.screenshot({ path: test.info().outputPath('settings-collapsed-360.png'), fullPage: true })
+  await page.getByRole('button', { name: '비밀번호 변경 열기' }).click()
+  await page.getByLabel('현재 비밀번호').fill('Temporary9!')
+  await update(page)
+  page.once('dialog', dialog => dialog.dismiss())
+  await page.getByRole('button', { name: '비밀번호 변경 접기' }).click()
+  await expect(page.getByLabel('현재 비밀번호')).toHaveValue('Temporary9!')
+  await expect(page.getByRole('button', { name: '업데이트', exact: true })).toBeDisabled()
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: '비밀번호 변경 접기' }).click()
+  await expect(page.getByLabel('현재 비밀번호')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '업데이트', exact: true })).toBeEnabled()
+  await page.getByRole('button', { name: '비밀번호 변경 열기' }).click()
+  await expect(page.getByLabel('현재 비밀번호')).toBeEmpty()
+})
+
 test('password input blocks update and is never persisted', async ({ page }) => {
   await open(page, '/mypage')
+  await page.getByRole('button', { name: '비밀번호 변경 열기', exact: true }).click()
   await page.getByLabel('현재 비밀번호').fill('SecretValue9!')
   await update(page)
   await expect(page.getByRole('button', { name: '업데이트', exact: true })).toBeDisabled()
@@ -356,7 +378,7 @@ test('password input blocks update and is never persisted', async ({ page }) => 
     return event.defaultPrevented
   })).toBe(true)
   await page.getByRole('button', { name: '취소', exact: true }).last().click()
-  await expect(page.getByLabel('현재 비밀번호')).toBeEmpty()
+  await expect(page.getByLabel('현재 비밀번호')).toHaveCount(0)
   await expect(page.getByRole('button', { name: '업데이트', exact: true })).toBeEnabled()
 })
 
@@ -442,6 +464,7 @@ test('initial session failure blocks private UI and retry recovers', async ({ pa
 
 test('account inputs survive failed verification and recover without persistent drafts', async ({ page }) => {
   await open(page, '/mypage')
+  await page.getByRole('button', { name: '비밀번호 변경 열기', exact: true }).click()
   await page.getByRole('textbox', { name: '닉네임', exact: true }).fill('입력보존')
   await page.getByLabel('현재 비밀번호').fill('Temporary9!')
   memberStatus = 503
