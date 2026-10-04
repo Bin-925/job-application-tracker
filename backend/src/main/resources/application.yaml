@@ -4,7 +4,7 @@ spring:
   config:
     import: optional:application-secret.yml
   session:
-    timeout: 7d
+    timeout: 30m
     jdbc:
       initialize-schema: always
       schema: classpath:db/session-mysql.sql

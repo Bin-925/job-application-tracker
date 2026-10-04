@@ -2,7 +2,7 @@ spring:
   flyway:
     enabled: false
   session:
-    timeout: 7d
+    timeout: 30m
     jdbc:
       initialize-schema: always
       schema: classpath:db/session-h2.sql

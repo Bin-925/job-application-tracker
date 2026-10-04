@@ -76,6 +76,43 @@ async function update(page) {
   await expect(page.getByRole('button', { name: '업데이트', exact: true })).toBeVisible()
 }
 
+for (const rememberMe of [false, true]) {
+  test(`login retention is explicit and defaults off on both auth routes: ${rememberMe}`, async ({ page }) => {
+    memberStatus = 401
+    currentMember = null
+    const logins = []
+    const joins = []
+    await page.route('**/api/v1/members/login', async route => {
+      logins.push(route.request().postDataJSON())
+      await route.fulfill({ status: 401, json: { message: 'Fixture rejected' } })
+    })
+    await page.route('**/api/v1/members/join', async route => {
+      joins.push(route.request().postDataJSON())
+      await route.fulfill({ status: 201, body: 'Created' })
+    })
+    await page.setViewportSize({ width: 360, height: 960 })
+    await page.goto(origin + '/login')
+    for (const join of [false, true]) {
+      const checkbox = page.getByRole('checkbox', { name: '로그인 상태 유지', exact: true })
+      await expect(checkbox).not.toBeChecked()
+      await expect(checkbox).toHaveAccessibleDescription('선택하면 이 기기에서 최대 7일간 유지됩니다. 공용 기기에서는 선택하지 마세요.')
+      await checkbox.setChecked(rememberMe)
+      await page.getByLabel('아이디', { exact: true }).fill('retentiontest')
+      await page.getByLabel('비밀번호', { exact: true }).fill('Retention123')
+      if (join) await page.getByLabel('닉네임', { exact: true }).fill('테스트')
+      if (!rememberMe) {
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+        await page.screenshot({ path: test.info().outputPath(`retention-${join ? 'join' : 'login'}-360.png`), fullPage: true })
+      }
+      await page.getByRole('button', { name: join ? '가입하고 시작하기' : '로그인', exact: true }).click()
+      await expect(page.getByRole('alert')).toBeVisible()
+      expect(logins.at(-1)).toEqual({ username: 'retentiontest', password: 'Retention123', rememberMe })
+      if (!join) await page.getByRole('link', { name: '회원가입', exact: true }).click()
+    }
+    expect(joins).toEqual([{ username: 'retentiontest', password: 'Retention123', nickname: '테스트' }])
+  })
+}
+
 test('auth route changes clear errors and all credentials in both directions', async ({ page }) => {
   memberStatus = 401
   currentMember = null

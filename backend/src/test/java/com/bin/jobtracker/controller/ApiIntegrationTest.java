@@ -48,7 +48,7 @@ class ApiIntegrationTest {
     }
 
     private String loginAndGetSession(String username) throws Exception {
-        LoginRequest req = new LoginRequest(username, TEST_PW);
+        LoginRequest req = new LoginRequest(username, TEST_PW, false);
         var response = perform(post("/api/v1/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
@@ -213,7 +213,7 @@ class ApiIntegrationTest {
                         .content(body))
                 .andExpect(status().isNoContent());
 
-        LoginRequest loginReq = new LoginRequest("membere", newPw);
+        LoginRequest loginReq = new LoginRequest("membere", newPw, false);
         perform(post("/api/v1/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
@@ -232,7 +232,7 @@ class ApiIntegrationTest {
                         .content(objectMapper.writeValueAsString(java.util.Map.of("currentPassword", TEST_PW))))
                 .andExpect(status().isNoContent());
 
-        LoginRequest loginReq = new LoginRequest("memberf", TEST_PW);
+        LoginRequest loginReq = new LoginRequest("memberf", TEST_PW, false);
         perform(post("/api/v1/members/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginReq)))
