@@ -53,15 +53,13 @@ IntelliJ에서 직접 Java를 실행하면 PowerShell 실행기의 환경변수�
 
 `docker stop`, 재시작, 컨테이너 재생성은 named volume을 유지한다. **`docker compose down -v`, `docker volume rm`, Docker 데이터 초기화는 사용하지 않는다.** 영구 볼륨은 백업이 아니다. 중요한 기록을 저장하기 시작하면 `pg_dump` 백업을 별도 디스크에도 보관하고 복원 검증을 해야 한다.
 
-백업 예시(실행 전 저장소 루트에서 `.local/backups` 생성):
+백업과 별도 DB 복원 검증(저장소 루트, PowerShell 7 이상):
 
 ```powershell
-New-Item -ItemType Directory -Force .local/backups
-docker exec jobtracker-postgres pg_dump -U jobtracker_admin -d jobtracker -Fc -f /tmp/jobtracker.dump
-docker cp jobtracker-postgres:/tmp/jobtracker.dump .local/backups/jobtracker.dump
+./scripts/Backup-Postgres.ps1
 ```
 
-예시 파일명은 재실행하면 덮어쓰므로 실제 보관 시 날짜를 붙인다. 비밀번호 파일도 안전하게 별도 보관한다. 운영 DB 이전과 복원 게이트는 [기존 절차](POSTGRES_MIGRATION.md)를 따른다.
+실행마다 별도 파일을 만들고 로그인 세션은 제외한다. [백업·검증 결과 읽는 법과 한계](POSTGRES_BACKUP.md)를 먼저 확인한다. 비밀번호 파일도 안전하게 별도 보관한다. 운영 DB 이전과 복원 게이트는 [기존 절차](POSTGRES_MIGRATION.md)를 따른다.
 
 ## 이번 검증
 

@@ -117,6 +117,9 @@ jobs:
       - run: chmod +x gradlew
       - name: Verify PostgreSQL migrations and sessions
         run: ./gradlew postgresTest --no-daemon
+      - name: Verify backup and isolated restore scripts
+        shell: pwsh
+        run: ../tests/backup/Test-Backup.ps1
       - name: Upload PostgreSQL reports
         if: always()
         uses: actions/upload-artifact@v4

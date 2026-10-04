@@ -160,6 +160,7 @@ cd ..
 - 비밀번호는 첫 실행 시 생성해 `.local/postgres`에만 보관하고, 앱에는 관리자 권한 없는 `jobtracker` 계정을 사용합니다. 기존 MySQL/H2 데이터는 자동 이전하지 않습니다.
 - `./scripts/Stop-Local.ps1`은 앱만 종료합니다. DB 종료는 `docker stop jobtracker-postgres`이며 볼륨은 유지됩니다. `down -v`로 데이터를 삭제하지 않도록 주의합니다.
 - H2 demo는 `-Database demo`로 명시합니다. PID·로그·비밀번호 등 로컬 파일은 커밋하지 않습니다. [영구 DB 실행·보존·백업 안내](docs/LOCAL_POSTGRESQL.md).
+- 로컬 백업: PowerShell 7에서 `./scripts/Backup-Postgres.ps1`. 세션을 제외한 덤프를 별도 임시 DB에 복원해 검증합니다. [안전 장치·결과·한계](docs/POSTGRES_BACKUP.md). 외부 보관과 정기 예약은 아직 설정하지 않았습니다.
 - 기본 API 주소는 `/api/v1`입니다. `VITE_API_URL`은 공개 프론트 설정이므로 비밀값을 넣지 않습니다.
 - PWA 확인은 `frontend`에서 `pnpm build` 후 `pnpm preview`로 진행합니다. 개발 서버와 배포 산출물 검증은 구분합니다.
 
@@ -169,7 +170,7 @@ cd ..
 |---|---|
 | Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 11개 |
 | Backend tests and build | H2/단위·통합 테스트 55개와 bootJar |
-| PostgreSQL migrations and sessions | Testcontainers 기반 이전·복원 6개 + 세션 11개 |
+| PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 11개, 실제 백업/격리 복원 스크립트 검증 |
 | Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |
 
 숫자는 이 README 기준 개발 버전의 검증 범위입니다. 브라우저 테스트의 API fixture는 실제 백엔드 검증을 대신하지 않습니다.
