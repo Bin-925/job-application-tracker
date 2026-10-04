@@ -84,7 +84,7 @@ export function Applications() {
 
 function readCalendarFilters() {
   try { const value = JSON.parse(localStorage.getItem('calendar-types')); if (Array.isArray(value)) return value.filter(v => ['APPLIED', 'INTERVIEW', 'DEADLINE'].includes(v)) } catch { /* Use the default for stale preferences. */ }
-  return ['INTERVIEW', 'DEADLINE']
+  return ['APPLIED', 'INTERVIEW', 'DEADLINE']
 }
 
 export function Calendar() {
@@ -97,7 +97,9 @@ export function Calendar() {
   const [types, setTypes] = useState(readCalendarFilters)
   const [showCancelled, setShowCancelled] = useState(false)
   const add = () => open(apps.length ? { kind: 'schedule', date: selected } : { kind: 'application' })
-  const events = sortEvents(apps.flatMap(eventsOf).filter(e => types.includes(e.type) && (showCancelled || e.state !== 'CANCELLED')))
+  const allEvents = apps.flatMap(eventsOf)
+  const hiddenApplied = types.includes('APPLIED') ? 0 : allEvents.filter(e => e.type === 'APPLIED' && e.date === selected).length
+  const events = sortEvents(allEvents.filter(e => types.includes(e.type) && (showCancelled || e.state !== 'CANCELLED')))
   const days = eachDayOfInterval({ start: startOfWeek(month), end: endOfWeek(endOfMonth(month)) })
   function toggle(type) { const next = types.includes(type) ? types.filter(t => t !== type) : [...types, type]; setTypes(next); localStorage.setItem('calendar-types', JSON.stringify(next)) }
   return <>
@@ -107,6 +109,7 @@ export function Calendar() {
       <div className="calendar-grid">{days.map(day => { const key = dateKey(day); const daily = events.filter(e => e.date === key); return <button key={key} className={'calendar-day' + (!isSameMonth(day, month) ? ' outside' : '') + (selected === key ? ' selected' : '')} aria-label={format(day, 'M월 d일') + ', 일정 ' + daily.length + '건'} aria-pressed={selected === key} aria-current={key === dateKey() ? 'date' : undefined} onClick={() => setSelected(key)}><span>{format(day, 'd')}</span><span className="day-dots">{[...new Set(daily.map(e => e.type))].map(type => <i className={type.toLowerCase()} key={type} />)}{daily.length > 3 && <small>+{daily.length - 3}</small>}</span></button> })}</div>
       <div className="calendar-filters">{[['APPLIED', '지원일'], ['INTERVIEW', '면접'], ['DEADLINE', '마감']].map(([type, label]) => <label key={type} className={type.toLowerCase()}><input type="checkbox" checked={types.includes(type)} onChange={() => toggle(type)} />{label}</label>)}</div>
       <label className="check-label"><input type="checkbox" checked={showCancelled} onChange={e => setShowCancelled(e.target.checked)} />취소 일정 포함</label>
+      {hiddenApplied > 0 && <button className="text-button" onClick={() => toggle('APPLIED')}>지원 기록 {hiddenApplied}건 표시</button>}
     </section>
     <section className="page-section"><div className="section-heading"><h2>{format(parseISO(selected), 'M월 d일 EEEE', { locale: ko })}</h2><button className="text-button" onClick={add}><Plus size={17} />{apps.length ? '일정 추가' : '지원 추가'}</button></div><EventRows events={events.filter(e => e.date === selected)} empty={types.length ? '이 날짜에 표시할 일정이 없습니다.' : '표시할 일정 종류를 선택해 주세요.'} /></section>
     <button className="fab" title={apps.length ? '선택 날짜 일정 추가' : '첫 지원 추가'} aria-label={apps.length ? '선택 날짜 일정 추가' : '첫 지원 추가'} onClick={add}>{apps.length ? <CalendarPlus size={26} /> : <Plus size={26} />}</button>
