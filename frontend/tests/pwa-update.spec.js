@@ -73,6 +73,54 @@ async function update(page) {
   await expect(page.getByRole('button', { name: '업데이트', exact: true })).toBeVisible()
 }
 
+test('auth route changes clear errors and all credentials in both directions', async ({ page }) => {
+  memberStatus = 401
+  currentMember = null
+  await page.route('**/api/v1/members/login', route => route.fulfill({ status: 401, json: { message: 'Login rejected' } }))
+  await page.route('**/api/v1/members/join', route => route.fulfill({ status: 400, json: { message: 'Join rejected' } }))
+  await page.goto(origin + '/login')
+  await page.getByLabel('아이디', { exact: true }).fill('routecheck')
+  await page.getByLabel('비밀번호', { exact: true }).fill('RouteSecret9')
+  await page.getByRole('button', { name: '로그인', exact: true }).click()
+  await expect(page.getByRole('alert')).toBeVisible()
+  await page.getByRole('link', { name: '회원가입', exact: true }).click()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(page.getByLabel('아이디', { exact: true })).toBeEmpty()
+  await expect(page.getByLabel('비밀번호', { exact: true })).toBeEmpty()
+  await page.getByLabel('아이디', { exact: true }).fill('routecheck')
+  await page.getByLabel('비밀번호', { exact: true }).fill('RouteSecret9')
+  await page.getByLabel('닉네임', { exact: true }).fill('테스트')
+  await page.getByRole('button', { name: '가입하고 시작하기', exact: true }).click()
+  await expect(page.getByRole('alert')).toBeVisible()
+  await page.getByRole('link', { name: '로그인', exact: true }).click()
+  await expect(page.getByRole('alert')).toHaveCount(0)
+  await expect(page.getByLabel('아이디', { exact: true })).toBeEmpty()
+  await expect(page.getByLabel('비밀번호', { exact: true })).toBeEmpty()
+  await expect(page.getByLabel('닉네임', { exact: true })).toHaveCount(0)
+})
+
+for (const responseStatus of [200, 401]) {
+  test(`leaving a pending login ignores its late ${responseStatus} response`, async ({ page }) => {
+    memberStatus = 401
+    currentMember = null
+    let pendingLogin
+    await page.route('**/api/v1/members/login', route => { pendingLogin = route })
+    await page.goto(origin + '/login')
+    await page.getByLabel('아이디', { exact: true }).fill('routecheck')
+    await page.getByLabel('비밀번호', { exact: true }).fill('RouteSecret9')
+    await page.getByRole('button', { name: '로그인', exact: true }).click()
+    await expect.poll(() => Boolean(pendingLogin)).toBe(true)
+    const canceled = page.waitForEvent('requestfailed', { predicate: r => r.url().endsWith('/members/login') })
+    await page.getByRole('link', { name: '회원가입', exact: true }).click()
+    await canceled
+    await expect(page.getByRole('button', { name: '가입하고 시작하기', exact: true })).toBeEnabled()
+    await pendingLogin.fulfill({ status: responseStatus, json: responseStatus === 200 ? member : { message: 'Late rejection' } })
+    await expect(page).toHaveURL(origin + '/join')
+    await expect(page.getByRole('alert')).toHaveCount(0)
+    await expect(page.getByLabel('비밀번호', { exact: true })).toBeEmpty()
+  })
+}
+
 test('cross-tab activation preserves an editor until explicit clean reload', async ({ page, context }) => {
   await open(page)
   const other = await context.newPage()
