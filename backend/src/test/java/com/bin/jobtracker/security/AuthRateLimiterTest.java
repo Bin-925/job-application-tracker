@@ -67,4 +67,16 @@ class AuthRateLimiterTest {
         var limiter = limiter(false);
         for (int i = 0; i < 20; i++) limiter.checkLogin("student");
     }
+
+    @Test void recoveryEmailBudgetsProtectMemberRecipientAndPublicConfirmation() {
+        var limiter = limiter(true);
+        for (int i = 0; i < 3; i++) limiter.checkRecoveryEmail(1L, "target@example.test");
+        assertThatThrownBy(() -> limiter.checkRecoveryEmail(1L, "other@example.test")).isInstanceOf(RateLimitException.class);
+        assertThatThrownBy(() -> limiter.checkRecoveryEmail(2L, "TARGET@example.test")).isInstanceOf(RateLimitException.class);
+        nanos.addAndGet(Duration.ofMinutes(20).toNanos());
+        assertThatCode(() -> limiter.checkRecoveryEmail(1L, "target@example.test")).doesNotThrowAnyException();
+        for (int i = 0; i < 3; i++) limiter.checkRequest("ip", "/api/v1/members/recovery-email/confirm", "POST");
+        assertThatThrownBy(() -> limiter.checkRequest("ip", "/api/v1/members/me/recovery-email/requests", "POST"))
+                .isInstanceOf(RateLimitException.class);
+    }
 }

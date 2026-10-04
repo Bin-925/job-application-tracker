@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { Workspace } from './workspace/Workspace'
 import { AuthPage } from './workspace/AuthPage'
+import { VerifyRecoveryEmail } from './workspace/RecoveryEmail'
 import { Today, Applications, Calendar, Detail, Settings, ApplicationAction } from './workspace/Pages'
 import { SessionProvider } from './store/SessionProvider'
 import { useSession } from './store/sessionContext'
@@ -24,6 +25,7 @@ export default function App() {
   return <SessionProvider><BrowserRouter><ScrollReset /><Routes>
     <Route path="/login" element={<AuthPage key="login" />} />
     <Route path="/join" element={<AuthPage key="join" join />} />
+    <Route path="/verify-email" element={<VerifyRecoveryEmail />} />
     <Route element={<ProtectedWorkspace />}>
       <Route index element={<Today />} />
       <Route path="applications" element={<Applications />} />

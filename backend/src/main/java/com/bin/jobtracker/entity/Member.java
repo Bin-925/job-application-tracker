@@ -12,6 +12,11 @@ public class Member extends BaseEntity {
     @Column(nullable = false, columnDefinition = "bigint default 0")
     private long authVersion;
 
+    @Column(length = 254)
+    private String recoveryEmail;
+
+    public void verifyRecoveryEmail(String email) { recoveryEmail = email; revokeSessions(); }
+
     public void revokeSessions() { authVersion++; }
 
     @Column(unique = true, nullable = false)

@@ -9,6 +9,7 @@ import { notifySessionChanged } from '../store/auth'
 import { Editor } from './Editor'
 import { useFormProtection } from './useFormProtection'
 import { useSession } from '../store/sessionContext'
+import { RecoveryEmail } from './RecoveryEmail'
 
 export function ApplicationAction({ edit = false }) {
   const { apps, refresh, notify } = useOutletContext()
@@ -174,6 +175,7 @@ export function Settings() {
     <section className="profile-heading"><span className="avatar">{member?.nickname?.slice(0, 1) || '나'}</span><div><h2>{member?.nickname || '불러오는 중…'}</h2><p className="muted">@{member?.username || ''}</p></div></section>
     <section className="settings-section"><h2>화면 설정</h2><label className="setting-toggle">{dark ? <Moon size={19} /> : <Sun size={19} />}다크 모드<input type="checkbox" role="switch" checked={dark} onChange={e => { setDark(e.target.checked); document.documentElement.classList.toggle('dark', e.target.checked); localStorage.setItem('theme', e.target.checked ? 'dark' : 'light') }} /></label></section>
     {member && <section className="settings-section"><h2>닉네임</h2><form className="inline-form" onChange={nicknameProtection.markDirty} onSubmit={e => save(e, 'nickname')}><input aria-label="닉네임" name="nickname" defaultValue={member.nickname} disabled={busy} required maxLength={10} /><div><button disabled={busy || !canMutate}>저장</button><button type="reset" disabled={busy} onClick={nicknameProtection.clear}>취소</button></div></form></section>}
+    <RecoveryEmail />
     <section className="settings-section">
       <button type="button" aria-label={passwordOpen ? '비밀번호 변경 접기' : '비밀번호 변경 열기'} aria-expanded={passwordOpen} aria-controls="password-change-form" disabled={busy} onClick={() => passwordOpen ? closePassword(true) : setPasswordOpen(true)}><KeyRound size={18} />비밀번호 변경<ChevronDown size={18} /></button>
       {passwordOpen && <form id="password-change-form" onChange={passwordProtection.markDirty} onSubmit={e => save(e, 'password')}><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" disabled={busy} required /></label><div><label>새 비밀번호<input name="newPassword" type="password" autoComplete="new-password" disabled={busy} required minLength={8} maxLength={30} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,30}" aria-describedby="new-password-hint" /></label><p id="new-password-hint" className="field-hint">영문과 숫자를 모두 포함, 8~30자</p></div><div><button disabled={busy || !canMutate}>비밀번호 변경</button><button type="button" disabled={busy} onClick={() => closePassword()}>취소</button></div></form>}

@@ -8,6 +8,11 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(MailUnavailableException.class)
+    public ResponseEntity<?> handleMail(MailUnavailableException error) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, error.getMessage());
+    }
+
     @ExceptionHandler(RateLimitException.class)
     public ResponseEntity<?> handleRateLimit(RateLimitException error) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
