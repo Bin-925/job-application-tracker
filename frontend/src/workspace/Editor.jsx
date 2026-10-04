@@ -87,7 +87,7 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
           <p className="muted">{app.company} · {app.position}</p>
           <label>지원 상태<select autoFocus value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)}>{Object.entries(statuses).map(([v, label]) => <option key={v} value={v}>{label}</option>)}</select></label>
           {selectedStatus !== 'TO_APPLY' && !app.appliedDate && <label>지원일<input name="appliedDate" type="date" required max={dateKey()} defaultValue={dateKey()} /></label>}
-          {selectedStatus === 'INTERVIEW' && <label className="check-label"><input type="checkbox" checked={withInterview} onChange={e => setWithInterview(e.target.checked)} />면접 일정 함께 등록</label>}
+          {selectedStatus === 'INTERVIEW' && <label className="check-label"><input type="checkbox" checked={withInterview} onChange={e => setWithInterview(e.target.checked)} />상태 저장 후 면접 일정 등록</label>}
         </>}
         {kind === 'schedule' && <>
           {app ? <p className="muted">{app.company} · {app.position}</p> : <label>지원 내역<select name="applicationId" required defaultValue=""><option value="" disabled>회사를 선택하세요</option>{apps.map(a => <option value={a.id} key={a.id}>{a.company} · {a.position}</option>)}</select></label>}
@@ -101,7 +101,7 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
         {kind === 'withdraw' && <><p>계정과 지원 내역 {count}건, 연결된 일정이 모두 삭제됩니다.</p><p className="muted">탈퇴한 계정은 복구할 수 없습니다.</p><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" required /></label><label className="check-label"><input type="checkbox" required />모든 기록 삭제에 동의합니다.</label></>}
       </fieldset>
       {error && <p className="error" role="alert">{error}</p>}
-      <div className="editor-footer"><button type="button" onClick={close} disabled={busy}>취소</button><button className={['delete', 'withdraw'].includes(kind) ? 'danger-fill' : 'primary'} disabled={busy || !canMutate || (kind === 'schedule' && !apps.length)}>{busy ? '저장 중…' : ['delete', 'withdraw'].includes(kind) ? '삭제 확인' : '저장'}{kind === 'schedule' && <CalendarPlus size={17} />}</button></div>
+      <div className="editor-footer"><button type="button" onClick={close} disabled={busy}>취소</button><button className={['delete', 'withdraw'].includes(kind) ? 'danger-fill' : 'primary'} disabled={busy || !canMutate || (kind === 'schedule' && !apps.length)}>{busy ? '저장 중…' : ['delete', 'withdraw'].includes(kind) ? '삭제 확인' : kind === 'status' && selectedStatus === 'INTERVIEW' && withInterview ? '상태 저장 후 일정 등록' : '저장'}{kind === 'schedule' && <CalendarPlus size={17} />}</button></div>
       {schedule && <div className="delete-schedule">{confirmDelete ? <><span>이 일정을 삭제할까요?</span><button type="button" className="danger" disabled={busy || !canMutate} onClick={deleteSchedule}>삭제 확인</button><button type="button" disabled={busy} onClick={() => setConfirmDelete(false)}>유지</button></> : <button type="button" className="text-button danger" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />일정 삭제</button>}</div>}
     </form>
   </dialog>
