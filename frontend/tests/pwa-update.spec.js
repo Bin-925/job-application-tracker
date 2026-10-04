@@ -103,6 +103,31 @@ test('auth route changes clear errors and all credentials in both directions', a
 })
 
 for (const width of [360, 1440]) {
+  test(`application detail restores all list filters at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 960 })
+    await page.clock.setFixedTime(new Date('2028-01-31T12:00:00'))
+    applications = [{ id: 7, company: 'Filter fixture', position: 'Engineer', status: 'INTERVIEW', appliedDate: '2028-01-30', schedules: [
+      { id: 8, type: 'INTERVIEW', title: 'Interview', date: '2028-02-01', state: 'SCHEDULED' },
+    ] }]
+    const query = '?view=upcoming-interviews&q=fixture&status=INTERVIEW&sort=company'
+    await page.goto(origin + '/applications' + query)
+    for (const name of ['상세 보기', 'Filter fixture Engineer']) {
+      await page.getByRole('link', { name, exact: true }).click()
+      await expect(page.getByRole('heading', { name: 'Filter fixture', exact: true })).toBeVisible()
+      await page.getByRole('link', { name: '지원 목록', exact: true }).click()
+      await expect(page).toHaveURL(origin + '/applications' + query)
+      await expect(page.getByRole('button', { name: '면접 예정', exact: true })).toHaveAttribute('aria-pressed', 'true')
+      await expect(page.getByRole('textbox', { name: '회사 또는 직무 검색' })).toHaveValue('fixture')
+      await expect(page.getByRole('combobox', { name: '지원 상태 필터' })).toHaveValue('INTERVIEW')
+      await expect(page.getByRole('combobox', { name: '정렬' })).toHaveValue('company')
+    }
+    await page.goto(origin + '/applications/7')
+    await page.getByRole('link', { name: '지원 목록', exact: true }).click()
+    await expect(page).toHaveURL(origin + '/applications')
+  })
+}
+
+for (const width of [360, 1440]) {
   test(`calendar month navigation keeps date, events and new schedule aligned at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 960 })
     await page.clock.setFixedTime(new Date('2028-01-31T12:00:00'))
