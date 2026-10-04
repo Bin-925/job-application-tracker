@@ -107,22 +107,22 @@ for (const width of [360, 1440]) {
     await page.setViewportSize({ width, height: 960 })
     await page.clock.setFixedTime(new Date('2028-01-31T12:00:00'))
     applications = [{ id: 7, company: 'Calendar fixture', position: 'Engineer', status: 'INTERVIEW', appliedDate: '2028-01-30', schedules: [
-      { id: 8, type: 'INTERVIEW', title: 'February interview', date: '2028-02-01', time: '10:00:00', state: 'SCHEDULED', version: 0 },
+      { id: 8, type: 'INTERVIEW', title: 'February interview', date: '2028-02-29', time: '10:00:00', state: 'SCHEDULED', version: 0 },
     ] }]
     await page.goto(origin + '/calendar')
     await expect(page.getByRole('heading', { name: '2028년 1월', exact: true })).toBeVisible()
     await page.getByRole('button', { name: '다음 달', exact: true }).click()
     await expect(page.getByRole('heading', { name: '2028년 2월', exact: true })).toBeVisible()
-    await expect(page.getByRole('heading', { name: '2월 1일 화요일', exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: '2월 1일, 일정 1건', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    await expect(page.getByRole('heading', { name: '2월 29일 화요일', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: '2월 29일, 일정 1건', exact: true })).toHaveAttribute('aria-pressed', 'true')
     await expect(page.getByRole('button', { name: /February interview/ })).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
     await page.screenshot({ path: test.info().outputPath(`calendar-aligned-${width}.png`), fullPage: true })
     await page.getByRole('button', { name: '일정 추가', exact: true }).click()
-    await expect(page.getByRole('textbox', { name: '날짜', exact: true })).toHaveValue('2028-02-01')
+    await expect(page.getByRole('textbox', { name: '날짜', exact: true })).toHaveValue('2028-02-29')
     await page.getByRole('button', { name: '취소', exact: true }).click()
     await page.getByRole('button', { name: '이전 달', exact: true }).click()
-    await expect(page.getByRole('heading', { name: '1월 1일 토요일', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '1월 29일 토요일', exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: /February interview/ })).toHaveCount(0)
   })
 }
@@ -133,9 +133,9 @@ test('calendar handles year boundaries, leap day, adjacent days and today', asyn
   await expect(page.getByRole('heading', { name: '2028년 1월', exact: true })).toBeVisible()
   await page.getByRole('button', { name: '이전 달', exact: true }).click()
   await expect(page.getByRole('heading', { name: '2027년 12월', exact: true })).toBeVisible()
-  await expect(page.getByRole('heading', { name: '12월 1일 수요일', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '12월 31일 금요일', exact: true })).toBeVisible()
   await page.getByRole('button', { name: '다음 달', exact: true }).click()
-  await expect(page.getByRole('heading', { name: '1월 1일 토요일', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '1월 31일 월요일', exact: true })).toBeVisible()
   await page.getByRole('button', { name: '오늘', exact: true }).click()
   await expect(page.getByRole('heading', { name: '1월 31일 월요일', exact: true })).toBeVisible()
   await page.getByRole('button', { name: '2월 1일, 일정 0건', exact: true }).click()
@@ -143,10 +143,29 @@ test('calendar handles year boundaries, leap day, adjacent days and today', asyn
   await page.getByRole('button', { name: '2월 29일, 일정 0건', exact: true }).click()
   await expect(page.getByRole('heading', { name: '2월 29일 화요일', exact: true })).toBeVisible()
   await page.getByRole('button', { name: '다음 달', exact: true }).click()
-  await expect(page.getByRole('heading', { name: '3월 1일 수요일', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '3월 29일 수요일', exact: true })).toBeVisible()
   await page.getByRole('button', { name: '오늘', exact: true }).click()
   await expect(page.getByRole('heading', { name: '2028년 1월', exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { name: '1월 31일 월요일', exact: true })).toBeVisible()
+})
+
+test('calendar uses the current day after clamping to a shorter month', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2027-01-31T12:00:00'))
+  await page.goto(origin + '/calendar')
+  for (const [direction, date] of [
+    ['다음 달', '2월 28일'],
+    ['다음 달', '3월 28일'],
+    ['이전 달', '2월 28일'],
+    ['이전 달', '1월 28일'],
+  ]) {
+    await page.getByRole('button', { name: direction, exact: true }).click()
+    await expect(page.getByRole('button', { name: date + ', 일정 0건', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  }
+  await page.getByRole('button', { name: '1월 15일, 일정 0건', exact: true }).click()
+  await page.getByRole('button', { name: '다음 달', exact: true }).click()
+  await expect(page.getByRole('button', { name: '2월 15일, 일정 0건', exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.getByRole('button', { name: '오늘', exact: true }).click()
+  await expect(page.getByRole('button', { name: '1월 31일, 일정 0건', exact: true })).toHaveAttribute('aria-pressed', 'true')
 })
 
 for (const responseStatus of [200, 401]) {
