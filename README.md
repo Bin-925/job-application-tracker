@@ -169,12 +169,14 @@ cd ..
 
 | 필수 CI | 검증 내용 |
 |---|---|
-| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 14개 |
+| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 17개 |
 | Backend tests and build | H2/단위·통합 테스트 55개와 bootJar |
 | PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 11개, 실제 백업/격리 복원 스크립트 검증 |
 | Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |
 
 숫자는 이 README 기준 개발 버전의 검증 범위입니다. 브라우저 테스트의 API fixture는 실제 백엔드 검증을 대신하지 않습니다.
+
+로그인·가입 전환 시 오류/입력 초기화와 지연 응답 처리, 캘린더의 월 이동·선택 날짜·일정 추가 기본값 일치도 브라우저 회귀 테스트로 검증합니다. 월 이동은 해당 월의 1일을 선택하며 윤년·연도 경계·오늘 복귀를 포함합니다. HTTP k6 부하 테스트는 이런 화면 동작이나 전체 보안 검증을 대신하지 않습니다.
 
 ```powershell
 # frontend
