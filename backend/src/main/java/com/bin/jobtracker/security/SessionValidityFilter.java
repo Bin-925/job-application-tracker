@@ -11,7 +11,11 @@ import java.io.IOException;
 
 public class SessionValidityFilter extends OncePerRequestFilter {
     private final MemberRepository members;
-    public SessionValidityFilter(MemberRepository members) { this.members = members; }
+    private final SessionPolicy policy;
+    public SessionValidityFilter(MemberRepository members, SessionPolicy policy) {
+        this.members = members;
+        this.policy = policy;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -19,7 +23,7 @@ public class SessionValidityFilter extends OncePerRequestFilter {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof SessionPrincipal principal) {
             // A DB revision also rejects old sessions that race with session deletion.
-            boolean valid = members.findById(principal.memberId())
+            boolean valid = policy.isValid(request.getSession(false)) && members.findById(principal.memberId())
                     .map(member -> member.getAuthVersion() == principal.authVersion()).orElse(false);
             if (!valid) {
                 SecurityContextHolder.clearContext();

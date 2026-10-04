@@ -21,9 +21,9 @@ export function AuthPage({ join = false }) {
     pendingRequest.current = request
     setBusy(true); setError('')
     try {
-      if (join) await api.post('/members/join', data, { signal: request.signal })
+      if (join) await api.post('/members/join', { username: data.username, password: data.password, nickname: data.nickname }, { signal: request.signal })
       if (request.signal.aborted) return
-      await api.post('/members/login', { username: data.username, password: data.password }, { signal: request.signal })
+      await api.post('/members/login', { username: data.username, password: data.password, rememberMe: data.rememberMe === 'on' }, { signal: request.signal })
       if (request.signal.aborted) return
       notifySessionChanged()
       navigate('/', { replace: true })
@@ -46,6 +46,7 @@ export function AuthPage({ join = false }) {
         <div><label>아이디<input name="username" required autoComplete="username" pattern={join ? '[a-z0-9]{4,20}' : undefined} title="영문 소문자와 숫자 4~20자" maxLength={20} aria-describedby={join ? 'username-rule' : undefined} /></label>{join && <p id="username-rule" className="field-hint">영문 소문자와 숫자만 사용, 4~20자</p>}</div>
         <div><label>비밀번호<input name="password" type="password" required autoComplete={join ? 'new-password' : 'current-password'} minLength={join ? 8 : undefined} maxLength={30} pattern={join ? '(?=.*[A-Za-z])(?=.*[0-9]).{8,30}' : undefined} title="영문과 숫자를 포함한 8~30자" aria-describedby={join ? 'password-rule' : undefined} /></label>{join && <p id="password-rule" className="field-hint">영문과 숫자를 모두 포함, 8~30자</p>}</div>
         {join && <div><label>닉네임<input name="nickname" required minLength={1} maxLength={10} autoComplete="nickname" aria-describedby="nickname-rule" /></label><p id="nickname-rule" className="field-hint">1~10자</p></div>}
+        <div><label className="check-label"><input name="rememberMe" type="checkbox" disabled={busy} aria-describedby="remember-me-hint" />로그인 상태 유지</label><p id="remember-me-hint" className="field-hint">선택하면 이 기기에서 최대 7일간 유지됩니다. 공용 기기에서는 선택하지 마세요.</p></div>
         {error && <p role="alert" className="error">{error}</p>}
         <button className="primary" disabled={busy}>{busy ? '처리 중…' : join ? '가입하고 시작하기' : '로그인'}<ArrowRight size={18} /></button>
       </form>

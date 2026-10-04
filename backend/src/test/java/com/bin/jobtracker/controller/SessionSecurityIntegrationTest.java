@@ -2,6 +2,7 @@ package com.bin.jobtracker.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.bin.jobtracker.security.SessionPolicy;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,11 +10,16 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.session.Session;
+import org.springframework.session.SessionRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Base64;
+import java.nio.charset.StandardCharsets;
+import java.util.function.Consumer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -26,6 +32,7 @@ class SessionSecurityIntegrationTest {
     @Autowired MockMvc mvc;
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
+    @Autowired SessionRepository<?> sessions;
 
     // No mock authentication or csrf() postprocessor: exercise the browser protocol.
     private class Browser {
@@ -49,6 +56,9 @@ class SessionSecurityIntegrationTest {
         void login(String name, String password) throws Exception {
             write(post(ROOT + "/login"), Map.of("username", name, "password", password), 200);
         }
+        MvcResult login(String name, boolean rememberMe) throws Exception {
+            return write(post(ROOT + "/login"), Map.of("username", name, "password", PASSWORD, "rememberMe", rememberMe), 200);
+        }
     }
     private JsonNode body(MvcResult result) throws Exception {
         return json.readTree(result.getResponse().getContentAsString());
@@ -62,6 +72,86 @@ class SessionSecurityIntegrationTest {
         var browser = new Browser();
         browser.login(join(browser), PASSWORD);
         return browser;
+    }
+
+    private String sessionId(Browser browser) {
+        return new String(Base64.getDecoder().decode(browser.cookie.getValue()), StandardCharsets.UTF_8);
+    }
+
+    private <S extends Session> void updateSession(SessionRepository<S> repository, Browser browser, Consumer<Session> edit) {
+        S session = repository.findById(sessionId(browser));
+        edit.accept(session);
+        repository.save(session);
+    }
+
+    @Test void anonymousAndLoginWithoutOptionUseShortSessionPolicy() throws Exception {
+        var browser = new Browser();
+        browser.fetchCsrf();
+        assertThat(browser.cookie.getMaxAge()).isEqualTo(-1);
+        assertThat(sessions.findById(sessionId(browser)).getMaxInactiveInterval()).isEqualTo(SessionPolicy.SHORT_IDLE);
+        browser.login(join(browser), PASSWORD);
+        var session = sessions.findById(sessionId(browser));
+        assertThat(browser.cookie.getMaxAge()).isEqualTo(-1);
+        assertThat(session.getMaxInactiveInterval()).isEqualTo(SessionPolicy.SHORT_IDLE);
+        assertThat((Boolean) session.getAttribute(SessionPolicy.REMEMBER_ME)).isFalse();
+        assertThat((Long) session.getAttribute(SessionPolicy.ABSOLUTE_EXPIRES_AT)
+                - (Long) session.getAttribute(SessionPolicy.AUTHENTICATED_AT)).isEqualTo(SessionPolicy.SHORT_ABSOLUTE.toMillis());
+    }
+
+    @Test void rememberedLoginSurvivesNewBrowserAndDoesNotExtendAbsoluteDeadline() throws Exception {
+        var first = new Browser();
+        String name = join(first);
+        first.login(name, true);
+        assertThat(first.cookie.getMaxAge()).isBetween(604790, 604800);
+        var session = sessions.findById(sessionId(first));
+        assertThat(session.getMaxInactiveInterval()).isEqualTo(SessionPolicy.REMEMBERED);
+        Long deadline = session.getAttribute(SessionPolicy.ABSOLUTE_EXPIRES_AT);
+        var reopened = new Browser();
+        reopened.cookie = first.cookie;
+        reopened.send(get(ROOT + "/me"), 200);
+        reopened.fetchCsrf();
+        assertThat((Long) sessions.findById(sessionId(reopened)).getAttribute(SessionPolicy.ABSOLUTE_EXPIRES_AT)).isEqualTo(deadline);
+        assertThat(reopened.cookie.getMaxAge()).isBetween(604790, 604800);
+    }
+
+    @Test void loggingInWithoutRetentionReplacesPersistentCookieAndRotatesSession() throws Exception {
+        var browser = new Browser();
+        String name = join(browser);
+        browser.login(name, true);
+        Cookie remembered = browser.cookie;
+        browser.login(name, false);
+        assertThat(browser.cookie.getValue()).isNotEqualTo(remembered.getValue());
+        assertThat(browser.cookie.getMaxAge()).isEqualTo(-1);
+        mvc.perform(get(ROOT + "/me").cookie(remembered)).andExpect(status().isUnauthorized());
+        browser.send(get(ROOT + "/me"), 200);
+    }
+
+    @Test void absoluteExpiryRejectsBothModesEvenWithRecentActivityAndValidCsrf() throws Exception {
+        for (boolean remembered : new boolean[]{false, true}) {
+            var browser = new Browser();
+            browser.login(join(browser), remembered);
+            browser.fetchCsrf();
+            var session = sessions.findById(sessionId(browser));
+            long expiry = System.currentTimeMillis() - 1;
+            long lifetime = (remembered ? SessionPolicy.REMEMBERED : SessionPolicy.SHORT_ABSOLUTE).toMillis();
+            updateSession(sessions, browser, stored -> {
+                stored.setAttribute(SessionPolicy.AUTHENTICATED_AT, expiry - lifetime);
+                stored.setAttribute(SessionPolicy.ABSOLUTE_EXPIRES_AT, expiry);
+            });
+            var rejected = browser.send(patch(ROOT + "/me/nickname").header("X-CSRF-TOKEN", browser.csrf)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"nickname\":\"NotSaved\"}"), 401);
+            assertThat(rejected.getResponse().getCookie("SESSION").getMaxAge()).isZero();
+            assertThat(sessions.findById(session.getId())).isNull();
+        }
+    }
+
+    @Test void legacySessionsWithoutPolicyMustLoginAgain() throws Exception {
+        var browser = loggedIn();
+        updateSession(sessions, browser, stored -> stored.removeAttribute(SessionPolicy.ABSOLUTE_EXPIRES_AT));
+        var rejected = browser.send(get(ROOT + "/me"), 401);
+        assertThat(rejected.getResponse().getCookie("SESSION").getMaxAge()).isZero();
+        browser.fetchCsrf();
+        assertThat(browser.cookie.getMaxAge()).isEqualTo(-1);
     }
 
     @Test void loginRotatesIdAndCsrfAndDoesNotExposeCredentials() throws Exception {
@@ -114,7 +204,7 @@ class SessionSecurityIntegrationTest {
         String name = join(first);
         first.login(name, PASSWORD);
         var second = new Browser();
-        second.login(name, PASSWORD);
+        second.login(name, true);
         Cookie old = first.cookie;
         first.write(post(ROOT + "/logout-all"), Map.of(), 204);
         mvc.perform(get(ROOT + "/me").cookie(old)).andExpect(status().isUnauthorized());
@@ -128,7 +218,7 @@ class SessionSecurityIntegrationTest {
         String name = join(first);
         first.login(name, PASSWORD);
         var second = new Browser();
-        second.login(name, PASSWORD);
+        second.login(name, true);
         Cookie old = first.cookie;
         first.write(patch(ROOT + "/me/password"), Map.of("currentPassword", PASSWORD, "newPassword", "Newpass1234"), 204);
         mvc.perform(get(ROOT + "/me").cookie(old)).andExpect(status().isUnauthorized());
@@ -151,7 +241,7 @@ class SessionSecurityIntegrationTest {
         String name = join(first);
         first.login(name, PASSWORD);
         var second = new Browser();
-        second.login(name, PASSWORD);
+        second.login(name, true);
         first.write(delete(ROOT + "/me"), Map.of("currentPassword", PASSWORD), 204);
         second.send(get(ROOT + "/me"), 401);
         first.write(post(ROOT + "/login"), Map.of("username", name, "password", PASSWORD), 401);

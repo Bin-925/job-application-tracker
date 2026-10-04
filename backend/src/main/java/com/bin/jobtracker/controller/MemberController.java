@@ -30,6 +30,7 @@ public class MemberController {
     private final SessionAuthenticationStrategy sessionStrategy;
     private final SessionService sessions;
     private final com.bin.jobtracker.security.AuthRateLimiter limiter;
+    private final com.bin.jobtracker.security.SessionPolicy sessionPolicy;
 
     @GetMapping("/csrf")
     public java.util.Map<String, String> csrf(CsrfToken token) {
@@ -60,6 +61,7 @@ public class MemberController {
         var authentication = authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken.unauthenticated(req.username(), req.password()));
         sessionStrategy.onAuthentication(authentication, request, response);
+        sessionPolicy.start(request.getSession(), req.rememberMe());
         var context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);

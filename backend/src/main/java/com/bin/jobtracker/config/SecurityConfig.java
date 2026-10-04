@@ -3,6 +3,8 @@ package com.bin.jobtracker.config;
 import com.bin.jobtracker.repository.MemberRepository;
 import com.bin.jobtracker.security.SessionPrincipal;
 import com.bin.jobtracker.security.SessionValidityFilter;
+import com.bin.jobtracker.security.SessionPolicy;
+import com.bin.jobtracker.security.SessionCookieSerializer;
 import com.bin.jobtracker.service.MemberService;
 import com.bin.jobtracker.security.AuthRateLimiter;
 import com.bin.jobtracker.security.AuthRateLimitProperties;
@@ -34,10 +36,14 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.List;
+import java.time.Clock;
 
 @Configuration
 @EnableConfigurationProperties(AuthRateLimitProperties.class)
 public class SecurityConfig {
+    @Bean
+    Clock sessionClock() { return Clock.systemUTC(); }
+
     @Bean
     BCryptPasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
 
@@ -64,21 +70,20 @@ public class SecurityConfig {
     }
 
     @Bean
-    DefaultCookieSerializer cookieSerializer(@Value("${app.session.secure:false}") boolean secure) {
-        var cookie = new DefaultCookieSerializer();
+    DefaultCookieSerializer cookieSerializer(SessionPolicy policy, @Value("${app.session.secure:false}") boolean secure) {
+        var cookie = new SessionCookieSerializer(policy);
         cookie.setCookieName("SESSION");
         cookie.setCookiePath("/");
         cookie.setUseHttpOnlyCookie(true);
         cookie.setUseSecureCookie(secure);
         cookie.setSameSite("Lax");
-        cookie.setCookieMaxAge(7 * 24 * 60 * 60);
         return cookie;
     }
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http, MemberRepository members,
             SecurityContextRepository contexts, CsrfTokenRepository csrf, AuthRateLimiter limiter,
-            ObjectMapper json, @Value("${app.request.max-body-bytes:32768}") int maxBodyBytes) throws Exception {
+            ObjectMapper json, SessionPolicy policy, @Value("${app.request.max-body-bytes:32768}") int maxBodyBytes) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(config -> config.csrfTokenRepository(csrf))
                 .securityContext(config -> config.securityContextRepository(contexts).requireExplicitSave(true))
@@ -106,7 +111,7 @@ public class SecurityConfig {
                             response.getWriter().write("{\"status\":403,\"message\":\"요청을 확인할 수 없습니다. 새로고침 후 다시 시도해 주세요.\"}");
                         }))
                 .addFilterBefore(new ApiRequestGuardFilter(limiter, json, maxBodyBytes), CsrfFilter.class)
-                .addFilterAfter(new SessionValidityFilter(members), CsrfFilter.class);
+                .addFilterAfter(new SessionValidityFilter(members, policy), CsrfFilter.class);
         return http.build();
     }
 
