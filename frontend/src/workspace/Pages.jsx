@@ -89,13 +89,16 @@ export function Calendar() {
   const { apps, open } = useOutletContext()
   const [selected, setSelected] = useState(dateKey())
   const month = startOfMonth(parseISO(selected))
+  function moveMonth(amount) {
+    setSelected(current => dateKey(addMonths(parseISO(current), amount)))
+  }
   const [types, setTypes] = useState(readCalendarFilters)
   const events = sortEvents(apps.flatMap(eventsOf).filter(e => types.includes(e.type) && e.state !== 'CANCELLED'))
   const days = eachDayOfInterval({ start: startOfWeek(month), end: endOfWeek(endOfMonth(month)) })
   function toggle(type) { const next = types.includes(type) ? types.filter(t => t !== type) : [...types, type]; setTypes(next); localStorage.setItem('calendar-types', JSON.stringify(next)) }
   return <>
     <section className="month-calendar" aria-label="월간 캘린더">
-      <div className="month-toolbar"><h1>{format(month, 'yyyy년 M월')}</h1><div><button className="icon" aria-label="이전 달" title="이전 달" onClick={() => setSelected(dateKey(addMonths(month, -1)))}><ChevronLeft size={20} /></button><button onClick={() => setSelected(dateKey())}>오늘</button><button className="icon" aria-label="다음 달" title="다음 달" onClick={() => setSelected(dateKey(addMonths(month, 1)))}><ChevronRight size={20} /></button></div></div>
+      <div className="month-toolbar"><h1>{format(month, 'yyyy년 M월')}</h1><div><button className="icon" aria-label="이전 달" title="이전 달" onClick={() => moveMonth(-1)}><ChevronLeft size={20} /></button><button onClick={() => setSelected(dateKey())}>오늘</button><button className="icon" aria-label="다음 달" title="다음 달" onClick={() => moveMonth(1)}><ChevronRight size={20} /></button></div></div>
       <div className="calendar-grid weekdays">{['일', '월', '화', '수', '목', '금', '토'].map(day => <span key={day}>{day}</span>)}</div>
       <div className="calendar-grid">{days.map(day => { const key = dateKey(day); const daily = events.filter(e => e.date === key); return <button key={key} className={'calendar-day' + (!isSameMonth(day, month) ? ' outside' : '') + (selected === key ? ' selected' : '')} aria-label={format(day, 'M월 d일') + ', 일정 ' + daily.length + '건'} aria-pressed={selected === key} aria-current={key === dateKey() ? 'date' : undefined} onClick={() => setSelected(key)}><span>{format(day, 'd')}</span><span className="day-dots">{[...new Set(daily.map(e => e.type))].map(type => <i className={type.toLowerCase()} key={type} />)}{daily.length > 3 && <small>+{daily.length - 3}</small>}</span></button> })}</div>
       <div className="calendar-filters">{[['APPLIED', '지원일'], ['INTERVIEW', '면접'], ['DEADLINE', '마감']].map(([type, label]) => <label key={type} className={type.toLowerCase()}><input type="checkbox" checked={types.includes(type)} onChange={() => toggle(type)} />{label}</label>)}</div>
