@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { ArrowLeft, CalendarPlus, ChevronLeft, ChevronRight, ExternalLink, LogOut, Moon, Pencil, Plus, Search, Sun, Trash2 } from 'lucide-react'
@@ -54,15 +54,17 @@ export function Today() {
 
 function ApplicationRow({ app }) {
   const { open, now } = useOutletContext()
+  const { search } = useLocation()
+  const detailState = { applicationSearch: search }
   const next = sortEvents(eventsOf(app).filter(e => e.type !== 'APPLIED' && isUpcoming(e, now)))[0]
   return <article className="application-row">
-    <div className="application-main"><Link to={'/applications/' + app.id}><h2>{app.company}</h2><p>{app.position}</p></Link>
+    <div className="application-main"><Link to={'/applications/' + app.id} state={detailState}><h2>{app.company}</h2><p>{app.position}</p></Link>
       <select className={'status-select ' + app.status.toLowerCase()} aria-label={app.company + ' 상태 변경'} value={app.status} onChange={event => open({ kind: 'status', app, status: event.target.value })}>
         {Object.entries(statuses).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
       </select>
     </div>
     <div className="application-meta"><span>{app.appliedDate ? prettyDate(app.appliedDate) + ' 지원' : '지원일 미등록'}</span>{next && <span className={next.type.toLowerCase()}>{prettyDate(next.date)} {next.title}</span>}</div>
-    <div className="application-actions"><button className="text-button" onClick={() => open({ kind: 'schedule', app })}><CalendarPlus size={16} />일정 추가</button><Link to={'/applications/' + app.id}>상세 보기<ChevronRight size={16} /></Link></div>
+    <div className="application-actions"><button className="text-button" onClick={() => open({ kind: 'schedule', app })}><CalendarPlus size={16} />일정 추가</button><Link to={'/applications/' + app.id} state={detailState}>상세 보기<ChevronRight size={16} /></Link></div>
   </article>
 }
 
@@ -109,12 +111,15 @@ export function Calendar() {
 
 export function Detail() {
   const { id } = useParams()
+  const { state } = useLocation()
+  const search = typeof state?.applicationSearch === 'string' && state.applicationSearch.startsWith('?') ? state.applicationSearch : ''
+  const listUrl = '/applications' + search
   const { apps, open } = useOutletContext()
   const app = apps.find(a => String(a.id) === id)
-  if (!app) return <div className="empty"><h1>지원 내역을 찾을 수 없습니다.</h1><Link to="/applications">지원 목록으로</Link></div>
+  if (!app) return <div className="empty"><h1>지원 내역을 찾을 수 없습니다.</h1><Link to={listUrl}>지원 목록으로</Link></div>
   const link = safeLink(app.link)
   return <>
-    <Link className="back-link" to="/applications"><ArrowLeft size={18} />지원 목록</Link>
+    <Link className="back-link" to={listUrl}><ArrowLeft size={18} />지원 목록</Link>
     <Heading title={app.company} sub={app.position}><button className="icon" title="지원 수정" onClick={() => open({ kind: 'application', app })}><Pencil size={20} /></button></Heading>
     <div className="detail-facts"><label>현재 상태<select value={app.status} onChange={e => open({ kind: 'status', app, status: e.target.value })}>{Object.entries(statuses).map(([v, label]) => <option key={v} value={v}>{label}</option>)}</select></label><div><span className="muted">지원일</span><strong>{app.appliedDate || '미등록'}</strong></div>{link && <a href={link} target="_blank" rel="noopener noreferrer">채용 공고<ExternalLink size={16} /></a>}</div>
     <section className="page-section"><div className="section-heading"><h2>일정</h2><button className="text-button" onClick={() => open({ kind: 'schedule', app })}><CalendarPlus size={17} />일정 추가</button></div><EventRows events={sortEvents(eventsOf(app).filter(e => e.type !== 'APPLIED'))} /></section>

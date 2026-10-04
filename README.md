@@ -169,7 +169,9 @@ cd ..
 
 | 필수 CI | 검증 내용 |
 |---|---|
-| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 18개 |
+| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 20개 |
+
+지원 목록에서 상세를 열었다가 `지원 목록`으로 돌아오면 보기 탭·검색어·상태·정렬을 유지합니다. 상세 주소에 직접 접근한 경우 전체 목록으로 돌아갑니다. 두 상세 진입 링크와 360px/1440px 화면에서 회귀 테스트로 검증합니다.
 | Backend tests and build | H2/단위·통합 테스트 55개와 bootJar |
 | PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 11개, 실제 백업/격리 복원 스크립트 검증 |
 | Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |
