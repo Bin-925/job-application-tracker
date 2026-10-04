@@ -54,3 +54,9 @@ backend/data/
 .github/node_modules/
 frontend/test-results/
 frontend/playwright-report/
+
+# Database backups contain personal data, regardless of output directory.
+*.dump
+*.dump.partial
+*.dump.backup.json
+*.dump.restore.json

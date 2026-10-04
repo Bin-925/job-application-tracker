@@ -1,6 +1,6 @@
 # 문서 안내
 
-문서가 많아서 어떤 것이 최신인지 한눈에 보도록 정리했습니다. 기준일: 2026-10-03.
+문서가 많아서 어떤 것이 최신인지 한눈에 보도록 정리했습니다. 기준일: 2026-10-04.
 
 ## 1. 현재 기준 문서 (최신 유지)
 
@@ -14,6 +14,7 @@
 | [IMPLEMENTATION_STATUS](IMPLEMENTATION_STATUS.md) | 개발 현황과 출시 전 게이트 |
 | [CI_AND_AI_REVIEW](CI_AND_AI_REVIEW.md) | CI와 Gemini 리뷰 설정 |
 | [LOCAL_POSTGRESQL](LOCAL_POSTGRESQL.md) | 영구 개발 DB의 실행·중지·권한·보존·백업 |
+| [POSTGRES_BACKUP](POSTGRES_BACKUP.md) | 세션 제외 백업과 격리 복원 검증, 보관 한계 |
 | [LOAD_TESTING](LOAD_TESTING.md) | 별도 테스트 DB로 실행하는 k6 시나리오와 한계 |
 | [AI_COLLABORATION](../AI_COLLABORATION.md) | AI 도구 활용 범위 |
 
