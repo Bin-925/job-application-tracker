@@ -102,6 +102,23 @@ test('auth route changes clear errors and all credentials in both directions', a
   await expect(page.getByLabel('닉네임', { exact: true })).toHaveCount(0)
 })
 
+test('signup rules are visible and linked to fields before submission', async ({ page }) => {
+  memberStatus = 401
+  currentMember = null
+  await page.goto(origin + '/join')
+  await expect(page.getByLabel('아이디', { exact: true })).toHaveAccessibleDescription('영문 소문자와 숫자만 사용, 4~20자')
+  await expect(page.getByLabel('비밀번호', { exact: true })).toHaveAccessibleDescription('영문과 숫자를 모두 포함, 8~30자')
+  await expect(page.getByLabel('닉네임', { exact: true })).toHaveAccessibleDescription('1~10자')
+  for (const width of [360, 1440]) {
+    await page.setViewportSize({ width, height: 960 })
+    await expect(page.getByText('영문과 숫자를 모두 포함, 8~30자', { exact: true })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: test.info().outputPath(`signup-rules-${width}.png`), fullPage: true })
+  }
+  await page.getByRole('link', { name: '로그인', exact: true }).click()
+  await expect(page.getByText('영문과 숫자를 모두 포함, 8~30자', { exact: true })).toHaveCount(0)
+})
+
 for (const width of [360, 1440]) {
   test(`application detail restores all list filters at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 960 })

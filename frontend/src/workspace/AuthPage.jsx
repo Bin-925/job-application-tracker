@@ -43,9 +43,9 @@ export function AuthPage({ join = false }) {
       {params.has('expired') && <p role="status" className="notice">로그인이 만료되었습니다. 다시 로그인해 주세요.</p>}
       {params.has('passwordChanged') && <p role="status" className="notice">비밀번호를 변경하고 모든 기기에서 로그아웃했습니다.</p>}
       <form onSubmit={submit}>
-        <label>아이디<input name="username" required autoComplete="username" pattern={join ? '[a-z0-9]{4,20}' : undefined} title="영문 소문자와 숫자 4~20자" maxLength={20} /></label>
-        <label>비밀번호<input name="password" type="password" required autoComplete={join ? 'new-password' : 'current-password'} minLength={join ? 8 : undefined} maxLength={30} pattern={join ? '(?=.*[A-Za-z])(?=.*[0-9]).{8,30}' : undefined} title="영문과 숫자를 포함한 8~30자" /></label>
-        {join && <label>닉네임<input name="nickname" required minLength={1} maxLength={10} autoComplete="nickname" /></label>}
+        <div><label>아이디<input name="username" required autoComplete="username" pattern={join ? '[a-z0-9]{4,20}' : undefined} title="영문 소문자와 숫자 4~20자" maxLength={20} aria-describedby={join ? 'username-rule' : undefined} /></label>{join && <p id="username-rule" className="field-hint">영문 소문자와 숫자만 사용, 4~20자</p>}</div>
+        <div><label>비밀번호<input name="password" type="password" required autoComplete={join ? 'new-password' : 'current-password'} minLength={join ? 8 : undefined} maxLength={30} pattern={join ? '(?=.*[A-Za-z])(?=.*[0-9]).{8,30}' : undefined} title="영문과 숫자를 포함한 8~30자" aria-describedby={join ? 'password-rule' : undefined} /></label>{join && <p id="password-rule" className="field-hint">영문과 숫자를 모두 포함, 8~30자</p>}</div>
+        {join && <div><label>닉네임<input name="nickname" required minLength={1} maxLength={10} autoComplete="nickname" aria-describedby="nickname-rule" /></label><p id="nickname-rule" className="field-hint">1~10자</p></div>}
         {error && <p role="alert" className="error">{error}</p>}
         <button className="primary" disabled={busy}>{busy ? '처리 중…' : join ? '가입하고 시작하기' : '로그인'}<ArrowRight size={18} /></button>
       </form>
