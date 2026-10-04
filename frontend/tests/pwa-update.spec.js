@@ -131,7 +131,7 @@ test('interview option clearly saves status before opening a cancellable schedul
   await page.getByRole('checkbox', { name: '상태 저장 후 면접 일정 등록' }).check()
   await page.getByRole('button', { name: '상태 저장 후 일정 등록', exact: true }).click()
   await expect(page.getByRole('dialog', { name: '일정 추가', exact: true })).toBeVisible()
-  await expect(page.getByRole('status')).toHaveText('상태를 변경했습니다.')
+  await expect(page.getByRole('status').filter({ hasText: '상태를 변경했습니다.' })).toBeVisible()
   await page.getByRole('button', { name: '취소', exact: true }).click()
   await expect(page.getByRole('combobox', { name: 'Status fixture 상태 변경' })).toHaveValue('INTERVIEW')
   expect(applications[0].schedules).toEqual([])
