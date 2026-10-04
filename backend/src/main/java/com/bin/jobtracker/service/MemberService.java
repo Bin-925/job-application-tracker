@@ -14,6 +14,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final com.bin.jobtracker.repository.ApplicationRepository applicationRepository;
+    private final com.bin.jobtracker.repository.RecoveryEmailRepository recoveryEmails;
 
     @Transactional
     public Member join(String username, String password, String nickname) {
@@ -60,6 +61,7 @@ public class MemberService {
         }
         applicationRepository.deleteAll(applicationRepository.findByMemberId(memberId));
         applicationRepository.flush();
+        recoveryEmails.deleteById(memberId);
         memberRepository.delete(member);
     }
 

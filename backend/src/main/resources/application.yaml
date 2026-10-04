@@ -1,4 +1,10 @@
 spring:
+  mail:
+    properties:
+      "[mail.smtp.connectiontimeout]": 3000
+      "[mail.smtp.timeout]": 3000
+      "[mail.smtp.writetimeout]": 3000
+      "[mail.debug]": false
   flyway:
     enabled: false
   config:

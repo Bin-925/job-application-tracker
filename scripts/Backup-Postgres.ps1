@@ -28,7 +28,8 @@ try {
     $null = Invoke-BackupDocker @('exec', $SourceContainer, 'timeout', '120', 'pg_dump',
         '-U', 'jobtracker_admin', '-d', 'jobtracker', '--format=custom', '--no-owner', '--no-privileges',
         '--lock-wait-timeout=5s', '--exclude-table-data=public.spring_session',
-        '--exclude-table-data=public.spring_session_attributes', '--file', $remote)
+        '--exclude-table-data=public.spring_session_attributes',
+        '--exclude-table-data=public.recovery_email_verification', '--file', $remote)
     $null = Invoke-BackupDocker @('cp', "${SourceContainer}:$remote", "$file.partial")
     Protect-BackupPath "$file.partial"
     Move-Item -LiteralPath "$file.partial" -Destination $file

@@ -1,0 +1,11 @@
+# Explicit opt-in only. Mailpit captures messages locally; it does not deliver externally.
+spring:
+  mail:
+    host: 127.0.0.1
+    port: 1025
+app:
+  recovery-email:
+    enabled: true
+    from: noreply@jobtracker.test
+    public-base-url: http://127.0.0.1:5173
+    allow-local-http: true

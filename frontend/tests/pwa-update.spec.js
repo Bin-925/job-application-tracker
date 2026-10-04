@@ -63,6 +63,71 @@ test.afterEach(async () => {
   await new Promise(resolve => server.close(resolve))
 })
 
+test('recovery email request preserves errors and clears password after successful delivery', async ({ page }) => {
+  let sent = false, body
+  await page.route('**/api/v1/members/me/recovery-email', route => route.fulfill({ json: { available: true, verifiedEmail: 'old@example.test', pendingEmail: sent ? 'new@example.test' : null, expiresAt: '2026-10-04T12:00:00Z' } }))
+  await page.route('**/api/v1/members/me/recovery-email/requests', route => {
+    body = route.request().postDataJSON()
+    if (!sent) { sent = true; return route.fulfill({ status: 503, json: { message: '인증 메일을 보낼 수 없습니다.' } }) }
+    return route.fulfill({ status: 204 })
+  })
+  await page.setViewportSize({ width: 360, height: 800 })
+  await page.goto(origin + '/mypage')
+  await expect(page.getByText('인증된 이메일: old@example.test')).toBeVisible()
+  await page.getByLabel('복구 이메일', { exact: true }).fill('new@example.test')
+  await page.getByLabel('이메일 등록용 현재 비밀번호').fill('Test1234')
+  await page.getByRole('button', { name: '인증 메일 보내기' }).click()
+  await expect(page.getByRole('alert')).toContainText('인증 메일을 보낼 수 없습니다.')
+  await expect(page.getByLabel('복구 이메일', { exact: true })).toHaveValue('new@example.test')
+  await page.getByRole('button', { name: '인증 메일 보내기' }).click()
+  await expect(page.getByLabel('이메일 등록용 현재 비밀번호')).toHaveValue('')
+  await expect(page.getByText(/인증 대기: new@example.test/)).toBeVisible()
+  expect(body).toEqual({ email: 'new@example.test', currentPassword: 'Test1234' })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  await page.screenshot({ path: test.info().outputPath('recovery-email-360.png'), fullPage: true })
+})
+
+test('recovery email unavailable state has no pretend delivery form', async ({ page }) => {
+  await page.route('**/api/v1/members/me/recovery-email', route => route.fulfill({ json: { available: false, verifiedEmail: null, pendingEmail: null } }))
+  await page.goto(origin + '/mypage')
+  await expect(page.getByText('현재 이메일 인증을 사용할 수 없습니다.')).toBeVisible()
+  await expect(page.getByRole('button', { name: '인증 메일 보내기' })).toHaveCount(0)
+})
+
+test('verification scrubs fragment, never consumes on GET, and submits only on explicit confirmation', async ({ page }) => {
+  let calls = 0
+  const token = 'a'.repeat(43)
+  currentMember = null; memberStatus = 401
+  await page.route('**/api/v1/members/recovery-email/confirm', route => {
+    calls++
+    expect(route.request().postDataJSON()).toEqual({ token })
+    expect(route.request().headers()['x-csrf-token']).toBe('fixture')
+    return route.fulfill({ status: 204 })
+  })
+  await page.setViewportSize({ width: 360, height: 800 })
+  await page.goto(origin + '/verify-email#token=' + token)
+  await expect(page.getByRole('button', { name: '이메일 인증 완료' })).toBeVisible()
+  await expect(page).toHaveURL(origin + '/verify-email')
+  expect(calls).toBe(0)
+  expect(await page.evaluate(value => JSON.stringify({ ...localStorage, ...sessionStorage }).includes(value), token)).toBe(false)
+  await page.screenshot({ path: test.info().outputPath('verify-email-360.png'), fullPage: true })
+  await page.getByRole('button', { name: '이메일 인증 완료' }).click()
+  await expect(page.getByRole('status')).toContainText('이메일 인증을 완료했습니다.')
+  expect(calls).toBe(1)
+  await page.reload()
+  await expect(page.getByRole('alert')).toContainText('인증 링크를 다시 열거나')
+  expect(calls).toBe(1)
+})
+
+test('expired verification shows actionable error without automatic retry', async ({ page }) => {
+  let calls = 0
+  await page.route('**/api/v1/members/recovery-email/confirm', route => { calls++; return route.fulfill({ status: 400, json: { message: '인증 링크가 유효하지 않거나 만료되었습니다. 새 메일을 요청해 주세요.' } }) })
+  await page.goto(origin + '/verify-email#token=' + 'z'.repeat(43))
+  await page.getByRole('button', { name: '이메일 인증 완료' }).click()
+  await expect(page.getByRole('alert')).toContainText('새 메일을 요청해 주세요.')
+  expect(calls).toBe(1)
+})
+
 async function open(page, route = '/') {
   await page.goto(origin + route)
   await expect(page.getByRole('heading', { name: route === '/mypage' ? '내 정보' : '오늘', exact: true })).toBeVisible()

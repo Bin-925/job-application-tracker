@@ -14,6 +14,10 @@ BEGIN
     IF EXISTS (SELECT 1 FROM spring_session) OR EXISTS (SELECT 1 FROM spring_session_attributes) THEN
         RAISE EXCEPTION 'Backup contains login sessions';
     END IF;
+    IF to_regclass('public.recovery_email_verification') IS NOT NULL THEN
+        EXECUTE 'SELECT count(*) FROM recovery_email_verification' INTO max_id;
+        IF max_id <> 0 THEN RAISE EXCEPTION 'Backup contains pending email verification tokens'; END IF;
+    END IF;
     IF EXISTS (SELECT 1 FROM pg_constraint WHERE connamespace = 'public'::regnamespace AND NOT convalidated) THEN
         RAISE EXCEPTION 'Restored constraint not validated';
     END IF;

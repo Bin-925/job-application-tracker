@@ -3,7 +3,8 @@ param(
     [int]$BackendPort = 8080,
     [int]$FrontendPort = 5173,
     [ValidateSet('postgres', 'demo')][string]$Database = 'postgres',
-    [string]$SecretsDirectory = ''
+    [string]$SecretsDirectory = '',
+    [switch]$LocalMail
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -30,12 +31,19 @@ $web = $null
 try {
 $env:API_PROXY_TARGET = "http://127.0.0.1:$BackendPort"
 $env:APP_CORS_ALLOWED_ORIGINS = "http://127.0.0.1:$FrontendPort,http://localhost:$FrontendPort,http://127.0.0.1:4173"
+if ($LocalMail) {
+    & docker compose -f (Join-Path $root 'compose.mail.yaml') up -d
+    if ($LASTEXITCODE -ne 0) { throw 'Local Mailpit startup failed; existing containers were retained.' }
+}
+$profile = if ($LocalMail) { "$Database,mail-local" } else { $Database }
 if ($Database -eq 'postgres') {
     $env:DB_PASSWORD = [IO.File]::ReadAllText((Join-Path $SecretsDirectory 'app-password')).Trim()
     $env:DB_USERNAME = 'jobtracker'
     $env:DATABASE_URL = 'jdbc:postgresql://127.0.0.1:5433/jobtracker'
 }
-$api = Start-Process -FilePath $java -ArgumentList @('-jar', ('"' + $jar + '"'), "--spring.profiles.active=$Database", '--spring.config.import=', "--server.port=$BackendPort", '--server.address=127.0.0.1') -WorkingDirectory $backend -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logs 'backend.log') -RedirectStandardError (Join-Path $logs 'backend-error.log')
+$apiArguments = @('-jar', ('"' + $jar + '"'), "--spring.profiles.active=$profile", '--spring.config.import=', "--server.port=$BackendPort", '--server.address=127.0.0.1')
+if ($LocalMail) { $apiArguments += "--app.recovery-email.public-base-url=http://127.0.0.1:$FrontendPort" }
+$api = Start-Process -FilePath $java -ArgumentList $apiArguments -WorkingDirectory $backend -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $logs 'backend.log') -RedirectStandardError (Join-Path $logs 'backend-error.log')
     $ready = $false
     for ($i = 0; $i -lt 60; $i++) {
         if ($api.HasExited) { throw 'Backend exited. See .local/backend.log; existing DB data is retained.' }
@@ -68,6 +76,7 @@ $api = Start-Process -FilePath $java -ArgumentList @('-jar', ('"' + $jar + '"'),
     foreach ($name in $names) { [Environment]::SetEnvironmentVariable($name, $previous[$name], 'Process') }
 }
 Write-Output "Frontend: http://127.0.0.1:$FrontendPort"
+if ($LocalMail) { Write-Output 'Local-only mailbox: http://127.0.0.1:8025 (messages are not delivered externally)' }
 if ($Database -eq 'postgres') { Write-Output 'Database: PostgreSQL jobtracker (persistent local development data)' }
 else { Write-Output "Demo H2 data: $backend/data" }
 Write-Output "Process IDs: backend=$($api.Id), frontend=$($web.Id)"

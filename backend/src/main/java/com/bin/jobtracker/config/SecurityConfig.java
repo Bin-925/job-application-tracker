@@ -95,6 +95,7 @@ public class SecurityConfig {
                 .headers(headers -> headers.cacheControl(cache -> cache.disable())
                         .addHeaderWriter(new StaticHeadersWriter("Cache-Control", "private, no-store")))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/members/recovery-email/confirm").permitAll()
                         .requestMatchers("/api/v1/members/csrf", "/api/v1/members/join",
                                 "/api/v1/members/login", "/api/v1/members/logout",
                                 "/api/v1/members/check-username").permitAll()

@@ -41,6 +41,8 @@ public class AuthRateLimiter {
         boolean protectedRequest = csrf || path.equals("/api/v1/members/check-username")
                 || path.equals("/api/v1/members/login") || path.equals("/api/v1/members/join")
                 || path.equals("/api/v1/members/me/password")
+                || path.equals("/api/v1/members/me/recovery-email/requests")
+                || path.equals("/api/v1/members/recovery-email/confirm")
                 || (path.equals("/api/v1/members/me") && method.equals("DELETE"));
         if (!protectedRequest) return;
         consume(global);
@@ -62,6 +64,12 @@ public class AuthRateLimiter {
         if (!properties.enabled()) return;
         check("password-account", memberId.toString(), properties.attemptsPerAccount(),
                 Duration.ofSeconds(properties.accountWindowSeconds()));
+    }
+
+    public void checkRecoveryEmail(Long memberId, String email) {
+        if (!properties.enabled()) return;
+        check("recovery-member", memberId.toString(), 3, Duration.ofHours(1));
+        check("recovery-recipient", email.toLowerCase(Locale.ROOT), 3, Duration.ofHours(1));
     }
 
     private void check(String scope, String identity, int capacity, Duration period) {
