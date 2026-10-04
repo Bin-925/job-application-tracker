@@ -119,6 +119,24 @@ test('signup rules are visible and linked to fields before submission', async ({
   await expect(page.getByText('영문과 숫자를 모두 포함, 8~30자', { exact: true })).toHaveCount(0)
 })
 
+test('calendar primary action adds an event on the selected date or a first application', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2028-01-31T12:00:00'))
+  await page.goto(origin + '/calendar')
+  await page.getByRole('button', { name: '첫 지원 추가', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '지원 추가', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '취소', exact: true }).click()
+  applications = [{ id: 7, company: 'Calendar fixture', position: 'Engineer', status: 'TO_APPLY', schedules: [] }]
+  await page.reload()
+  await page.getByRole('button', { name: '다음 달', exact: true }).click()
+  await page.getByRole('button', { name: '선택 날짜 일정 추가', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '일정 추가', exact: true })).toBeVisible()
+  await expect(page.getByRole('textbox', { name: '날짜', exact: true })).toHaveValue('2028-02-29')
+  await page.getByRole('button', { name: '취소', exact: true }).click()
+  await page.getByRole('link', { name: '지원', exact: true }).click()
+  await page.getByRole('button', { name: '지원 추가', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '지원 추가', exact: true })).toBeVisible()
+})
+
 for (const width of [360, 1440]) {
   test(`application detail restores all list filters at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 960 })

@@ -53,7 +53,7 @@ export function Workspace() {
       <SessionNotice />
       {error && <section className="notice"><p role="alert">{error}</p><button onClick={refresh}><RefreshCw size={16} />다시 시도</button></section>}
       {loading ? <p className="empty" role="status">지원 내역을 불러오는 중…</p> : loaded && <Outlet context={context} />}
-      {!pathname.startsWith('/mypage') && <button className="fab" title="지원 추가" aria-label="지원 추가" onClick={() => setEditor({ kind: 'application' })}><Plus size={26} /></button>}
+      {!pathname.startsWith('/mypage') && pathname !== '/calendar' && <button className="fab" title="지원 추가" aria-label="지원 추가" onClick={() => setEditor({ kind: 'application' })}><Plus size={26} /></button>}
     </div>
     {editor && <Editor key={editor.kind + '-' + (editor.app?.id || '') + '-' + (editor.event?.id || '')} {...editor} apps={apps} onClose={() => setEditor(null)} onSaved={async (message, next) => { await refresh(); setEditor(next || null); setNotice(message) }} />}
     {notice && <div role="status" className="toast">{notice}</div>}
