@@ -15,6 +15,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  backup-permissions:
+    name: Windows backup permissions
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify private file permissions without changing ownership
+        shell: pwsh
+        run: ./tests/backup/Test-BackupPermissions.ps1
   automation:
     name: Workflow tests
     runs-on: ubuntu-latest

@@ -49,7 +49,9 @@ function Protect-BackupPath([string]$Path) {
             $rule = [Security.AccessControl.FileSystemAccessRule]::new($sid, 'FullControl', $inheritance, 'None', 'Allow')
             $null = $acl.AddAccessRule($rule)
         }
-        Set-Acl -LiteralPath $Path -AclObject $acl
+        # Persist only modified access rules; Set-Acl can also request SACL privileges.
+        $item = Get-Item -LiteralPath $Path
+        [IO.FileSystemAclExtensions]::SetAccessControl($item, $acl)
     } else {
         $mode = if (Test-Path -LiteralPath $Path -PathType Container) { '700' } else { '600' }
         & chmod $mode -- $Path
