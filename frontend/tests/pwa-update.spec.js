@@ -119,6 +119,26 @@ test('signup rules are visible and linked to fields before submission', async ({
   await expect(page.getByText('영문과 숫자를 모두 포함, 8~30자', { exact: true })).toHaveCount(0)
 })
 
+test('calendar defaults to applied dates and preserves explicit hidden preferences', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2028-01-31T12:00:00'))
+  applications = [{ id: 7, company: 'Applied fixture', position: 'Engineer', status: 'APPLIED', appliedDate: '2028-01-31', schedules: [] }]
+  await page.goto(origin + '/calendar')
+  await expect(page.getByRole('checkbox', { name: '지원일', exact: true })).toBeChecked()
+  await expect(page.getByRole('button', { name: /Applied fixture/ })).toBeVisible()
+  for (const types of [['INTERVIEW', 'DEADLINE'], []]) {
+    await page.evaluate(value => localStorage.setItem('calendar-types', JSON.stringify(value)), types)
+    await page.reload()
+    await expect(page.getByRole('checkbox', { name: '지원일', exact: true })).not.toBeChecked()
+    await expect(page.getByRole('button', { name: /Applied fixture/ })).toHaveCount(0)
+    await page.getByRole('button', { name: '지원 기록 1건 표시', exact: true }).click()
+    await expect(page.getByRole('button', { name: /Applied fixture/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: '지원 기록 1건 표시', exact: true })).toHaveCount(0)
+    await page.reload()
+    await expect(page.getByRole('checkbox', { name: '지원일', exact: true })).toBeChecked()
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('calendar-types')))).toEqual([...types, 'APPLIED'])
+  }
+})
+
 test('cancelled calendar events can be inspected and restored without leaving the calendar', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 960 })
   await page.clock.setFixedTime(new Date('2028-01-31T12:00:00'))
