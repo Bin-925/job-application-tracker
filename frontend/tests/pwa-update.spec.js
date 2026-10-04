@@ -119,6 +119,24 @@ test('signup rules are visible and linked to fields before submission', async ({
   await expect(page.getByText('영문과 숫자를 모두 포함, 8~30자', { exact: true })).toHaveCount(0)
 })
 
+test('interview option clearly saves status before opening a cancellable schedule form', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 960 })
+  applications = [{ id: 7, company: 'Status fixture', position: 'Engineer', status: 'APPLIED', appliedDate: '2026-01-01', schedules: [] }]
+  await page.route('**/applications/7/status', async route => {
+    applications[0] = { ...applications[0], status: route.request().postDataJSON().status }
+    await route.fulfill({ json: applications[0] })
+  })
+  await page.goto(origin + '/applications')
+  await page.getByRole('combobox', { name: 'Status fixture 상태 변경' }).selectOption('INTERVIEW')
+  await page.getByRole('checkbox', { name: '상태 저장 후 면접 일정 등록' }).check()
+  await page.getByRole('button', { name: '상태 저장 후 일정 등록', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '일정 추가', exact: true })).toBeVisible()
+  await expect(page.getByRole('status')).toHaveText('상태를 변경했습니다.')
+  await page.getByRole('button', { name: '취소', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Status fixture 상태 변경' })).toHaveValue('INTERVIEW')
+  expect(applications[0].schedules).toEqual([])
+})
+
 test('calendar primary action adds an event on the selected date or a first application', async ({ page }) => {
   await page.clock.setFixedTime(new Date('2028-01-31T12:00:00'))
   await page.goto(origin + '/calendar')
