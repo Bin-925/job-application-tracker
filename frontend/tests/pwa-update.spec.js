@@ -119,6 +119,34 @@ test('signup rules are visible and linked to fields before submission', async ({
   await expect(page.getByText('영문과 숫자를 모두 포함, 8~30자', { exact: true })).toHaveCount(0)
 })
 
+test('cancelled calendar events can be inspected and restored without leaving the calendar', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 960 })
+  await page.clock.setFixedTime(new Date('2028-01-31T12:00:00'))
+  applications = [{ id: 7, company: 'Cancelled fixture', position: 'Engineer', status: 'INTERVIEW', schedules: [
+    { id: 8, type: 'INTERVIEW', title: 'Cancelled interview', date: '2028-01-31', state: 'CANCELLED', version: 0 },
+  ] }]
+  await page.route('**/applications/7/schedules/8', async route => {
+    applications[0].schedules[0] = { ...applications[0].schedules[0], ...route.request().postDataJSON() }
+    await route.fulfill({ json: applications[0].schedules[0] })
+  })
+  await page.goto(origin + '/calendar')
+  await expect(page.getByRole('checkbox', { name: '취소 일정 포함' })).not.toBeChecked()
+  await expect(page.getByRole('button', { name: /Cancelled interview/ })).toHaveCount(0)
+  await page.getByRole('checkbox', { name: '취소 일정 포함' }).check()
+  await expect(page.getByRole('button', { name: /Cancelled interview · 취소/ })).toBeVisible()
+  await page.screenshot({ path: test.info().outputPath('cancelled-calendar-360.png'), fullPage: true })
+  await page.getByRole('checkbox', { name: '면접', exact: true }).uncheck()
+  await expect(page.getByRole('button', { name: /Cancelled interview/ })).toHaveCount(0)
+  await page.getByRole('checkbox', { name: '면접', exact: true }).check()
+  await page.getByRole('button', { name: /Cancelled interview · 취소/ }).click()
+  await page.getByRole('combobox', { name: '일정 상태', exact: true }).selectOption('SCHEDULED')
+  await page.getByRole('button', { name: '저장', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('checkbox', { name: '취소 일정 포함' }).uncheck()
+  await expect(page.getByRole('button', { name: /Cancelled interview/ })).toBeVisible()
+  expect(applications[0].schedules[0].state).toBe('SCHEDULED')
+})
+
 test('interview option clearly saves status before opening a cancellable schedule form', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 960 })
   applications = [{ id: 7, company: 'Status fixture', position: 'Engineer', status: 'APPLIED', appliedDate: '2026-01-01', schedules: [] }]
