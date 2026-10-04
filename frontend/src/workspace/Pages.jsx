@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { ArrowLeft, CalendarPlus, ChevronLeft, ChevronRight, ExternalLink, LogOut, Moon, Pencil, Plus, Search, Sun, Trash2 } from 'lucide-react'
+import { ArrowLeft, CalendarPlus, ChevronDown, ChevronLeft, ChevronRight, ExternalLink, KeyRound, LogOut, Moon, Pencil, Plus, Search, Sun, Trash2 } from 'lucide-react'
 import { dateKey, errorMessage, eventsOf, filterApplications, hasUpcomingInterview, isActive, isUpcoming, prettyDate, safeLink, sortEvents, statuses } from '../domain/tracker'
 import api from '../api/client'
 import { notifySessionChanged } from '../store/auth'
@@ -144,6 +144,12 @@ export function Settings() {
   const [busy, setBusy] = useState(false)
   const nicknameProtection = useFormProtection(busy)
   const passwordProtection = useFormProtection(busy)
+  const [passwordOpen, setPasswordOpen] = useState(false)
+  function closePassword(confirmDiscard = false) {
+    if (busy || (confirmDiscard && passwordProtection.dirty && !window.confirm('입력한 비밀번호를 지우고 닫을까요?'))) return
+    passwordProtection.clear()
+    setPasswordOpen(false)
+  }
   const [dark, setDark] = useState(document.documentElement.classList.contains('dark'))
   useEffect(() => { let active = true; api.get('/members/me').then(r => { if (active) setMember(r.data) }).catch(e => { if (active) setError(errorMessage(e)) }); return () => { active = false } }, [])
   async function save(event, type) {
@@ -168,7 +174,10 @@ export function Settings() {
     <section className="profile-heading"><span className="avatar">{member?.nickname?.slice(0, 1) || '나'}</span><div><h2>{member?.nickname || '불러오는 중…'}</h2><p className="muted">@{member?.username || ''}</p></div></section>
     <section className="settings-section"><h2>화면 설정</h2><label className="setting-toggle">{dark ? <Moon size={19} /> : <Sun size={19} />}다크 모드<input type="checkbox" role="switch" checked={dark} onChange={e => { setDark(e.target.checked); document.documentElement.classList.toggle('dark', e.target.checked); localStorage.setItem('theme', e.target.checked ? 'dark' : 'light') }} /></label></section>
     {member && <section className="settings-section"><h2>닉네임</h2><form className="inline-form" onChange={nicknameProtection.markDirty} onSubmit={e => save(e, 'nickname')}><input aria-label="닉네임" name="nickname" defaultValue={member.nickname} disabled={busy} required maxLength={10} /><div><button disabled={busy || !canMutate}>저장</button><button type="reset" disabled={busy} onClick={nicknameProtection.clear}>취소</button></div></form></section>}
-    <section className="settings-section"><h2>비밀번호 변경</h2><form onChange={passwordProtection.markDirty} onSubmit={e => save(e, 'password')}><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" disabled={busy} required /></label><label>새 비밀번호<input name="newPassword" type="password" autoComplete="new-password" disabled={busy} required minLength={8} maxLength={30} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,30}" title="영문과 숫자를 포함한 8~30자" /></label><div><button disabled={busy || !canMutate}>비밀번호 변경</button><button type="reset" disabled={busy} onClick={passwordProtection.clear}>취소</button></div></form></section>
+    <section className="settings-section">
+      <button type="button" aria-label={passwordOpen ? '비밀번호 변경 접기' : '비밀번호 변경 열기'} aria-expanded={passwordOpen} aria-controls="password-change-form" disabled={busy} onClick={() => passwordOpen ? closePassword(true) : setPasswordOpen(true)}><KeyRound size={18} />비밀번호 변경<ChevronDown size={18} /></button>
+      {passwordOpen && <form id="password-change-form" onChange={passwordProtection.markDirty} onSubmit={e => save(e, 'password')}><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" disabled={busy} required /></label><div><label>새 비밀번호<input name="newPassword" type="password" autoComplete="new-password" disabled={busy} required minLength={8} maxLength={30} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,30}" aria-describedby="new-password-hint" /></label><p id="new-password-hint" className="field-hint">영문과 숫자를 모두 포함, 8~30자</p></div><div><button disabled={busy || !canMutate}>비밀번호 변경</button><button type="button" disabled={busy} onClick={() => closePassword()}>취소</button></div></form>}
+    </section>
     <section className="settings-section"><button disabled={busy} onClick={() => logout()}><LogOut size={18} />로그아웃</button><button disabled={busy} onClick={() => logout(true)}><LogOut size={18} />모든 기기에서 로그아웃</button><button disabled={busy} className="text-button danger" onClick={() => open({ kind: 'withdraw', count: apps.length })}>회원 탈퇴</button></section>
   </>
 }
