@@ -1,5 +1,5 @@
 param(
-    [ValidateSet('smoke', 'load', 'spike', 'soak', 'volume', 'conflict', 'contract', 'limits')]
+    [ValidateSet('smoke', 'load', 'spike', 'soak', 'volume', 'conflict', 'contract', 'limits', 'auth', 'arrival', 'endurance', 'mail', 'faults')]
     [string[]]$Profiles = @('smoke', 'contract', 'limits', 'load', 'spike', 'soak', 'volume', 'conflict'),
     [ValidateRange(18134, 18144)][int]$Port = 18134,
     [string]$JavaPath = $(if ($env:JAVA_HOME) { Join-Path $env:JAVA_HOME 'bin/java.exe' } else { 'java' }),
@@ -38,6 +38,11 @@ $revision = & git -C $root rev-parse HEAD
     profiles = $Profiles; database = 'PostgreSQL 17 Docker, ephemeral tmpfs, 1 CPU / 768 MiB'
     heapMaxMiB = 512; hikariMaxConnections = 10; tomcatMaxThreads = 50; port = $Port
     jarSha256 = (Get-FileHash -LiteralPath $jar -Algorithm SHA256).Hash
+    workingTreeDirty = [bool](& git -C $root status --porcelain)
+    testScriptHashes = @{
+        baseline = (Get-FileHash -LiteralPath (Join-Path $root 'tests/load/tracker.js') -Algorithm SHA256).Hash
+        additional = (Get-FileHash -LiteralPath (Join-Path $root 'tests/load/additional.js') -Algorithm SHA256).Hash
+    }
 } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $output 'environment.json') -Encoding UTF8
 
 $existing = & docker ps -a --filter "name=^/$container`$" --format '{{.Names}}|{{.Label "com.jobtracker.purpose"}}'
@@ -46,6 +51,10 @@ if ($existing -and $existing -ne "$container|load-test") { throw 'Container name
 if (Get-NetTCPConnection -LocalPort 15434 -State Listen -ErrorAction SilentlyContinue) {
     throw 'Database port 15434 is occupied. Stop the dedicated test container yourself before retrying.'
 }
+$existingMail = & docker ps -a --filter 'name=^/jobtracker-load-mailpit$' --format '{{.Names}}|{{.Label "com.jobtracker.purpose"}}'
+if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect mail test container.' }
+if ($existingMail -and $existingMail -ne 'jobtracker-load-mailpit|load-test') { throw 'Mail container name belongs to another workload.' }
+if (Get-NetTCPConnection -LocalPort 15435,15436 -State Listen -ErrorAction SilentlyContinue) { throw 'Isolated mail ports are occupied.' }
 $env:LOAD_DB_PASSWORD = [Guid]::NewGuid().ToString('N')
 $containerStarted = $false
 $results = @()
@@ -57,6 +66,10 @@ foreach ($profile in $Profiles) {
     $server = $null
     $load = $null
     $samples = @()
+    $faultEvents = @()
+    $paused = $false
+    $pauseInjected = $false
+    $restartInjected = $false
     try {
         if (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue) {
             throw "Port $Port became occupied; refusing to send traffic."
@@ -73,6 +86,12 @@ foreach ($profile in $Profiles) {
             '--spring.flyway.enabled=true', '--spring.session.jdbc.initialize-schema=never',
             '--server.tomcat.threads.max=50',
             '--logging.level.root=WARN', '--app.rate-limit.enabled=true')
+        if ($profile -eq 'mail') {
+            $serverArgs += @('--spring.mail.host=127.0.0.1', '--spring.mail.port=15435',
+                '--app.registration-email.required=true', '--app.recovery-email.enabled=true',
+                '--app.recovery-email.from=noreply@jobtracker.test', '--app.recovery-email.allow-local-http=true',
+                "--app.recovery-email.public-base-url=http://127.0.0.1:$Port")
+        }
         if ($profile -ne 'limits') {
             # A single load generator IP must provision independent synthetic users.
             # The limits profile runs a fresh server with the actual production defaults.
@@ -96,15 +115,40 @@ foreach ($profile in $Profiles) {
         $listener = Get-NetTCPConnection -LocalPort $Port -State Listen
         if ($listener.OwningProcess -ne $server.Id) { throw 'Listener ownership mismatch; refusing traffic.' }
         Write-Host "Running $profile on isolated PostgreSQL at port $Port"
+        $script = if ($profile -in @('auth', 'arrival', 'endurance', 'mail', 'faults')) { 'additional.js' } else { 'tracker.js' }
         $args = @('run', '--quiet', '-e', "PROFILE=$profile", '-e', 'K6_LOCAL_ISOLATED=ephemeral-postgres',
             '-e', "BASE_URL=http://127.0.0.1:$Port", '-e', "`"RESULT_FILE=$output/$profile.json`"",
-            "`"$root/tests/load/tracker.js`"")
+            "`"$root/tests/load/$script`"")
         $load = Start-Process -FilePath $k6 -ArgumentList $args -WorkingDirectory $root -WindowStyle Hidden `
             -PassThru -RedirectStandardOutput (Join-Path $output "$profile-k6.log") `
             -RedirectStandardError (Join-Path $output "$profile-k6-error.log")
         $timer = [Diagnostics.Stopwatch]::StartNew()
         while (-not $load.WaitForExit(500)) {
-            if ($timer.Elapsed.TotalSeconds -gt 360) { throw "Safety timeout for $profile" }
+            if ($timer.Elapsed.TotalSeconds -gt 540) { throw "Safety timeout for $profile" }
+            if ($profile -eq 'faults') {
+                if (-not $pauseInjected -and $timer.Elapsed.TotalSeconds -ge 8) {
+                    & docker pause $container *> (Join-Path $output 'fault-pause.log')
+                    if ($LASTEXITCODE -ne 0) { throw 'Failed to pause isolated DB.' }
+                    $paused = $true
+                    $pauseInjected = $true
+                    $faultEvents += @{ event = 'database-paused'; seconds = $timer.Elapsed.TotalSeconds }
+                }
+                if ($paused -and $timer.Elapsed.TotalSeconds -ge 20) {
+                    & docker unpause $container *> (Join-Path $output 'fault-unpause.log')
+                    if ($LASTEXITCODE -ne 0) { throw 'Failed to resume isolated DB.' }
+                    $paused = $false
+                    $faultEvents += @{ event = 'database-resumed'; seconds = $timer.Elapsed.TotalSeconds }
+                }
+                if (-not $restartInjected -and $timer.Elapsed.TotalSeconds -ge 40) {
+                    Stop-Process -Id $server.Id -Force
+                    $server.WaitForExit()
+                    $server = Start-Process -FilePath $java -ArgumentList $serverArgs -WorkingDirectory $backend `
+                        -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $output 'faults-restarted.log') `
+                        -RedirectStandardError (Join-Path $output 'faults-restarted-error.log')
+                    $restartInjected = $true
+                    $faultEvents += @{ event = 'application-restarted'; seconds = $timer.Elapsed.TotalSeconds }
+                }
+            }
             if ($server.HasExited) { throw 'Server exited during load.' }
             $server.Refresh()
             $samples += @{ seconds = [math]::Round($timer.Elapsed.TotalSeconds, 2)
@@ -117,9 +161,11 @@ foreach ($profile in $Profiles) {
         $results += @{ profile = $profile; exitCode = $exitCode; seconds = $timer.Elapsed.TotalSeconds }
         Write-Host "$profile exit=$exitCode"
     } finally {
+        if ($paused) { & docker unpause $container *> (Join-Path $output 'fault-finally-unpause.log') }
         if ($load -and -not $load.HasExited) { Stop-Process -Id $load.Id -Force }
         if ($server -and -not $server.HasExited) { Stop-Process -Id $server.Id -Force; $server.WaitForExit() }
         $samples | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath (Join-Path $output "$profile-resources.json") -Encoding UTF8
+        if ($profile -eq 'faults') { $faultEvents | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $output 'fault-events.json') -Encoding UTF8 }
     }
 }
 } finally {

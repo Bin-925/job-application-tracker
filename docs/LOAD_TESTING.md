@@ -16,7 +16,7 @@ Windows PowerShell, JDK 21, Docker Desktop Linux 엔진, k6가 필요하다. k6 
 
 ```powershell
 $env:JAVA_HOME = 'JDK 21 설치 경로'
-node --test tests/load/config.test.mjs
+node --test tests/load/config.test.mjs tests/load/additional-config.test.mjs
 ./scripts/Run-LoadTests.ps1
 
 # 일부 프로필만 다시 실행 (기본은 항상 bootJar 빌드)
@@ -24,9 +24,17 @@ node --test tests/load/config.test.mjs
 
 # 방금 빌드한 동일 소스를 재사용할 때만
 ./scripts/Run-LoadTests.ps1 -Profiles load,spike -SkipBuild
+
+# 추가 인증/메일/장애 검증
+./scripts/Run-LoadTests.ps1 -Profiles auth,arrival,endurance,mail,faults
+
+# 전체 13종
+./scripts/Run-LoadTests.ps1 -Profiles smoke,contract,limits,load,spike,soak,volume,conflict,auth,arrival,endurance,mail,faults
 ```
 
 Docker Desktop에는 `jobtracker-load` 그룹의 `jobtracker-load-postgres`로 표시된다. PostgreSQL 17을 실행하며 `127.0.0.1:15434`로만 연결할 수 있다. 기존 MySQL·Redis·다른 프로젝트 컨테이너에는 접근하지 않는다.
+
+추가된 `jobtracker-load-mailpit`은 SMTP `127.0.0.1:15435`, 메일 확인 API `127.0.0.1:15436`에만 바인딩한다. 실제 개발용 Mailpit/메일 계정은 사용하지 않는다. 테스트 종료 시 함께 중지하며 다음 실행에서 재생성한다.
 
 **임시 DB다. 실제 기록을 넣지 않는다.** 데이터는 tmpfs에 있어 컨테이너를 중지하면 사라진다. 재실행 시 같은 이름의 전용 테스트 컨테이너만 다시 생성한다. 이름이 같아도 소유 라벨이 다른 컨테이너는 거부한다. 완료 시 테스트 서버와 DB를 자동 중지하지만 컨테이너 항목은 Docker Desktop에 남는다. 일반 개발용 DB가 필요하면 별도 영구 볼륨을 가진 구성을 사용해야 한다.
 
@@ -44,10 +52,15 @@ Docker Desktop에는 `jobtracker-load` 그룹의 `jobtracker-load-postgres`로 �
 | soak | 10 | 지원 30개 | 120초 | 단기 지속 실행, 정리 누락/반복 실패 관찰 |
 | volume | 5 | 지원 500개 | 30초 | 계정별 전체 목록을 읽는 현 구조의 데이터 규모 영향 |
 | conflict | 10 | 동일 계정·동일 지원 1개 | 20초 | 경쟁 갱신 시 200/409, 정상 성공 시 버전 증가 |
+| auth | 4 | VU별 계정 | 45초 | 매회 3번 로그인, 세션·CSRF 회전, 아바타 본인 한정, 전체 로그아웃 후 두 세션 거절 |
+| arrival | 최대 30 | VU별 계정 | 60초 | 초당 2회 인증 여정 시작, dropped_iterations=0 |
+| endurance | 4 | VU별 계정 | 300초 | 인증 여정 연속 반복, JVM 자원 표본 |
+| mail | 4 | 반복마다 새 이메일·계정 | 20회 | 실제 로컬 SMTP 선인증 가입, 재설정, 두 세션 폐기, 토큰 재사용·이전 비밀번호 거절, 탈퇴 |
+| faults | 1 | 계정·지원 각 1개 | 80초 | 전용 DB 12초 일시 정지 후 복구, 전용 앱 강제 재시작, 기존 JDBC 세션·지원 유지 |
 
 세팅·계정 생성 시간은 위 시간에 추가된다. 5개 지원마다 면접 일정 1개를 생성한다. 일반 여정은 내 정보·목록·통계·상세를 읽고, 4회 중 1회에 새 지원 생성 → 내용 수정 → 상태 변경 → 면접/마감 2개 추가 → 일정 완료 처리 → 일정 삭제 → 지원 삭제 → 삭제 확인을 수행한다. 마지막에 0.3~0.7초 대기한다. 임시 지원은 반복 내에 삭제하고 다음 반복에서 기본 목록 수를 확인한다.
 
-`conflict`만 의도적으로 동일 세션과 지원을 공유한다. 다른 부하 프로필은 VU별 계정/세션/지원이 다르다. VU는 가상 사용자 수이지 초당 요청 수 또는 가입 회원 수가 아니다. closed-model이므로 서버가 느려지면 요청률도 내려간다.
+`conflict`만 의도적으로 동일 세션과 지원을 공유한다. 다른 부하 프로필은 VU별 계정/세션/지원이 다르다. VU는 가상 사용자 수이지 초당 요청 수 또는 가입 회원 수가 아니다. `arrival`은 open-model이고 나머지 VU 기반 시나리오는 서버가 느려지면 요청률도 내려간다.
 
 ## 측정 기준
 
@@ -57,6 +70,8 @@ Docker Desktop에는 `jobtracker-load` 그룹의 `jobtracker-load-postgres`로 �
 - 401/403/404/409/413/429는 **그 상태를 예상하는 특정 요청에서만** 정상으로 분류한다. 업무 조회가 429를 받는 것은 통과가 아니다.
 - 실패 상태나 데이터 불일치가 발견되면 해당 실행을 중단하고 실패로 기록한다. 후속 프로필은 별도 서버/DB에서 진행한다.
 - `business_duration`은 세팅 트래픽을 제외한다. 전체 `http_reqs`/`http_req_duration`에는 세팅도 포함되므로 서로 같은 지표처럼 비교하지 않는다.
+- 추가 정상 인증/메일 프로필은 HTTP 실패율 0과 API별 예상 상태를 검사하고, `auth_duration` p95<2.5초/p99<5초를 요구한다. 이 지표는 로그인만의 지연이나 여정 전체 시간이 아니라 해당 여정의 개별 업무 API 요청 집계다. Mailpit 조회는 제외한다.
+- `faults`는 의도한 장애 구간에서만 연결 실패(0)/500/503을 별도 허용한다. 익명 사용자의 인증 성공은 허용하지 않으며, 측정 시작 60초 이후에는 기존 인증 요청 200·익명 401과 동일한 회원/지원 ID를 요구한다. 실제 장애 관측과 복구 후 6회 이상 성공이 모두 필수다.
 
 임계값은 최초 회귀 기준으로 정한 로컬 목표다. 실사용자의 트래픽 자료에서 도출한 SLA가 아니고, 모든 요청이 1초 이내라는 뜻도 아니다. p95는 관측한 요청의 95%가 해당 시간 이내라는 의미다.
 
@@ -66,23 +81,23 @@ Docker Desktop에는 `jobtracker-load` 그룹의 `jobtracker-load-postgres`로 �
 flowchart LR
     K[k6 최대 30 VU] --> B[전용 Spring 서버 127.0.0.1:18134]
     B --> D[전용 PostgreSQL 127.0.0.1:15434]
-    D --> F[프로필마다 새 DB와 Flyway V1~V3]
+    D --> F[프로필마다 새 DB와 Flyway V1~V7]
     F --> V[Hibernate validate]
 ```
 
 - 전용 주소/포트 범위 외 요청을 거부하고 리다이렉트를 따라가지 않는다.
 - 실행 전 포트 충돌을 확인하고, 실제 리스너 PID가 방금 만든 서버인지 확인한다.
 - Spring JVM 최대 힙 512MiB, Hikari 최대 10개 연결, Tomcat 최대 50개 스레드. DB는 최대 1 CPU/768MiB, 데이터 tmpfs 최대 512MiB.
-- 시나리오당 360초 외부 안전 타임아웃. k6 요청별 10초 타임아웃. 상한 없는 VU/기록 수 입력을 허용하지 않는다.
+- 시나리오당 540초 외부 안전 타임아웃. k6 요청별 10초, 장애 프로필은 2초 타임아웃. 상한 없는 VU/기록 수 입력을 허용하지 않는다.
 - DB 비밀번호는 실행마다 임의 생성하며 운영 Secret을 가져오지 않는다. `application-secret.yml` import도 비운다.
 - `limits`는 요청 제한 기본값을 유지한다. 나머지는 한 IP에서 테스트 계정/세션을 만들기 위해 인증 관련 예산만 100,000으로 올린다. CSRF·소유권·세션·본문 크기 제한은 끄지 않는다. **로그인 공격 차단 성능은 이 완화된 부하 결과로 판단하지 않는다.**
-- 인증 세션은 fixture에서 미리 생성한다. 그러므로 일반 부하는 동시 로그인/BCrypt 처리량 테스트가 아니다.
+- 기존 일반 여정의 인증 세션은 fixture에서 미리 생성한다. 추가 `auth`/`arrival`/`endurance`는 매회 BCrypt 로그인을 실제 수행한다. 전체 로그아웃도 매회 실행하므로 누적 로그인 세션 수용량 실험은 아니다.
 
 ## 아직 검증하지 않는 것
 
-HTTPS/프록시/모바일 브라우저 렌더링, PWA 오프라인·업데이트, 서버 재시작 복구, 네트워크 단절, PostgreSQL 디스크 I/O·영구 볼륨, 장시간 메모리 누수, 수천 명 규모, 여러 IP/서버 간 전역 제한, 계정 탈퇴와 쓰기 요청의 경합은 별도 실험이 필요하다. Web Push는 아직 구현되지 않아 테스트 대상이 아니다.
+HTTPS/프록시/모바일 브라우저 렌더링, 실제 Google OAuth·외부 SMTP, PostgreSQL 디스크 I/O·영구 볼륨, 장시간 메모리 누수, 수천 명 규모, 여러 IP/서버 간 전역 제한, 계정 탈퇴와 쓰기 요청의 경합은 별도 실험이 필요하다. 로컬 DB pause·앱 재시작은 검증하지만 실제 네트워크 장비/PC 전원 장애를 재현한 것은 아니다. PWA·입력 보호는 별도 Playwright 검사이며 k6의 대상이 아니다. Web Push는 아직 구현되지 않았다.
 
-같은 PC에서 k6·JVM·Docker가 경쟁하며, DB tmpfs는 디스크 병목을 숨긴다. 운영 환경 용량이나 비용 산정에 이 수치를 그대로 사용하지 않는다. 120초 soak는 짧은 반복 안정성 확인일 뿐 장시간 안정성 통과가 아니다. APM·쿼리 추적 없이 특정 원인을 병목이라고 단정하지 않는다.
+같은 PC에서 k6·JVM·Docker가 경쟁하며, DB tmpfs는 디스크 병목을 숨긴다. 운영 환경 용량이나 비용 산정에 이 수치를 그대로 사용하지 않는다. 120초 soak와 300초 endurance는 단기 반복 안정성 확인이며 장시간 안정성 통과가 아니다. APM·쿼리 추적 없이 특정 원인을 병목이라고 단정하지 않는다.
 
 CI는 안전 설정 단위 테스트를 실행한다. 성능 수치는 공유 GitHub 러너에서 변동이 커서 필수 CI 성능 게이트로 추가하지 않았다. 실제 실행 결과는 날짜별 보고서에 남긴다.
 

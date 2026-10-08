@@ -51,6 +51,18 @@ class AuthRateLimiterTest {
                 .isInstanceOf(RateLimitException.class);
     }
 
+    @Test void googleRoutesShareTheLoginIpBudgetAndCannotBypassItBySwitchingPaths() {
+        for (String path : java.util.List.of("/oauth/google/start", "/oauth/authorize/google", "/oauth/callback/google",
+                "/oauth/google/complete", "/members/me/google", "/members/me/google/password",
+                "/members/me/google/recovery-email", "/members/me/google/delete")) {
+            var limiter = limiter(true);
+            for (int i = 0; i < 3; i++) limiter.checkRequest("ip", "/api/v1/members/login", "POST");
+            assertThatThrownBy(() -> limiter.checkRequest("ip", "/api/v1" + path, "POST"))
+                    .as(path).isInstanceOf(RateLimitException.class);
+            assertThatCode(() -> limiter.checkRequest("other-ip", "/api/v1" + path, "POST")).doesNotThrowAnyException();
+        }
+    }
+
     @Test void registrationEmailCooldownAndHourlyBudget() {
         var limiter = limiter(true);
         limiter.checkRegistrationEmail("recipient@example.test");

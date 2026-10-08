@@ -1,0 +1,14 @@
+allprojects {
+    afterEvaluate {
+        if (configurations.findByName('runtimeClasspath')) {
+            tasks.register('securityDependencyManifest') {
+                doLast {
+                    def dependencies = configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.collect {
+                        [group: it.moduleVersion.id.group, name: it.name, version: it.moduleVersion.id.version]
+                    }.unique().sort { a, b -> (a.group + a.name) <=> (b.group + b.name) }
+                    file(System.getProperty('security.manifest')).text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(dependencies))
+                }
+            }
+        }
+    }
+}

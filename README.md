@@ -121,6 +121,8 @@ React Router blocker로 보호 대상 폼의 메뉴·뒤로 가기·프로그램
 
 테스트 통과나 AI 리뷰의 무지적 결과는 보안 감사·운영 안전 보증이 아닙니다.
 
+2026-10-08 의존성 점검에서 프론트·자동화 도구의 알려진 경고를 수정하고 Jackson/Tomcat/PostgreSQL 드라이버/Log4j API/Commons Lang을 같은 주 버전 내 보안 유지보수 버전으로 올렸습니다. Spring MVC 경고 2건은 현재 사용하지 않는 XSLT 화면·SSE 화면 조각 기능에 관한 것으로 남아 있습니다. 경고를 숨기거나 패치 완료로 처리하지 않으며, [#85 Spring Boot 4 전환 설계](https://github.com/Bin-925/job-application-tracker/issues/85)로 추적합니다. [점검 근거와 한계](docs/SECURITY_ASSURANCE_2026-10-08.md).
+
 ### 로그인 유지 정책
 
 로그인 화면의 `로그인 상태 유지`는 기본 미선택입니다. Google 로그인·가입에도 이 선택을 적용합니다. 이메일 선인증 가입은 완료 후 별도로 로그인하며, 기존 호환용 가입만 가입 후 로그인합니다.
@@ -222,10 +224,10 @@ cd ..
 
 | 필수 CI | 검증 내용 |
 |---|---|
-| Frontend and PWA | lint, Node 테스트 20개, 빌드·PWA 검사, Playwright 62개 |
-| Backend tests and build | H2/단위·통합 테스트 121개와 bootJar. 모의 OIDC HTTP 제공자·GreenMail SMTP 포함 |
-| PostgreSQL migrations and sessions | Testcontainers 테스트 73개: 이전·복원, 세션·아바타 소유권, 메일 인증·비밀번호 복구, Google 인증 12개, 지원·일정·동시 가입. 실제 백업/격리 복원 스크립트 검증 |
-| Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |
+| Frontend and PWA | pnpm audit, lint, Node 테스트 20개, 빌드·PWA 검사, Playwright 64개 |
+| Backend tests and build | H2/단위·통합 테스트 126개와 bootJar. 모의 OIDC HTTP 제공자·GreenMail SMTP 포함 |
+| PostgreSQL migrations and sessions | Testcontainers 테스트 76개: 이전·복원, 세션·아바타 소유권, 메일 인증·비밀번호 복구, Google 인증 15개, 지원·일정·동시 가입. 실제 백업/격리 복원 스크립트 검증 |
+| Workflow tests | npm audit, Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 3개 |
 | Windows backup permissions | 백업 파일·폴더의 상속 차단, 현재 사용자/SYSTEM 접근 제한, 소유자 보존, 반복 적용 검증 |
 
 숫자는 이 README 기준 개발 버전의 검증 범위입니다. 브라우저 테스트의 API fixture는 실제 백엔드 검증을 대신하지 않습니다. 원래 익명인 가입 화면의 세션 확인 401은 입력 보호를 해제하지 않으며, 실제 회원 세션 상실은 입력·초안을 정리하는 회귀도 포함합니다.
@@ -270,9 +272,13 @@ Gemini는 같은 저장소의 열린 일반 PR(`dev`/`main` 대상)의 변경된
 
 k6로 실제 PostgreSQL API의 기본 여정·계정/권한·요청 제한·일반 부하·급증·단기 지속·대량 기록·동시 수정 8개 프로필을 검증합니다. Docker Desktop과 JDK 21, k6를 준비한 후 저장소 루트에서 `./scripts/Run-LoadTests.ps1`로 실행합니다.
 
+추가 인증·도착률·5분 지속·메일·장애 복구 5개 프로필은 `./scripts/Run-LoadTests.ps1 -Profiles auth,arrival,endurance,mail,faults`로 실행합니다. Google 실제 서비스에는 부하를 보내지 않으며 모의 제공자의 동시 인증·state 교차 사용·로그아웃 후 재사용을 H2/PostgreSQL 테스트로 확인합니다. [추가 시나리오와 완료 기준](docs/ADDITIONAL_TEST_MATRIX.md).
+
 `jobtracker-load-postgres`는 기존 DB와 분리된 임시 컨테이너이며 테스트 후 중지됩니다. 최대 30 VU, 계정당 최대 500개 지원을 사용합니다. 로컬 측정은 운영 수용량 보장이 아닙니다. [실행 방법·안전 장치·검증 한계](docs/LOAD_TESTING.md)를 먼저 확인하세요.
 
 [2026-10-03 측정 결과](docs/LOAD_TEST_RESULTS_2026-10-03.md): 최종 8개 프로필 통과, 준비 요청 포함 총 40,188건, 예상하지 않은 응답 0건. 운영 부하나 장시간 안정성 검증 완료를 뜻하지 않습니다.
+
+[2026-10-08 보안 패치 후 재검증](docs/SECURITY_ASSURANCE_2026-10-08.md): 최종 13개 프로필 통과, 준비·메일 캡처 API 포함 HTTP 163,848건, 검증 체크 238,997회. DB 일시 정지·앱 재시작 후 세션/지원 복구를 확인했습니다. 의도한 장애 응답은 정상 부하의 오류율과 분리했습니다.
 
 ## 협업 흐름
 

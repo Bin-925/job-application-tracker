@@ -425,6 +425,39 @@ test('password reset link requires explicit submission and matching passwords, c
   expect(logins).toBe(0)
 })
 
+for (const failure of ['network', '503']) {
+  test(`password reset ${failure} preserves input, prevents duplicate submission and never retries automatically`, async ({ page }) => {
+    memberStatus = 401
+    const token = 'q'.repeat(43)
+    let pending, attempts = 0
+    await page.route('**/api/v1/members/password-reset/confirm', route => {
+      attempts++
+      pending = route
+    })
+    await page.goto(origin + '/reset-password#token=' + token)
+    await page.getByLabel('새 비밀번호', { exact: true }).fill('RetrySecret123')
+    await page.getByLabel('새 비밀번호 확인', { exact: true }).fill('RetrySecret123')
+    await page.getByRole('button', { name: '비밀번호 변경', exact: true }).click()
+    await expect.poll(() => attempts).toBe(1)
+    await expect(page.getByRole('button', { name: '처리 중...' })).toBeDisabled()
+    if (failure === 'network') await pending.abort('failed')
+    else await pending.fulfill({ status: 503, json: { message: '서버에 잠시 연결할 수 없습니다.' } })
+    await expect(page.getByRole('alert')).toBeVisible()
+    await expect(page.getByLabel('새 비밀번호', { exact: true })).toHaveValue('RetrySecret123')
+    await page.evaluate(() => window.dispatchEvent(new Event('online')))
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
+    expect(attempts).toBe(1)
+    const stored = await page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }))
+    expect(stored).not.toContain('RetrySecret123')
+    expect(stored).not.toContain(token)
+    await page.getByRole('button', { name: '비밀번호 변경', exact: true }).click()
+    await expect.poll(() => attempts).toBe(2)
+    await pending.fulfill({ status: 204 })
+    await expect(page.getByRole('status')).toContainText('모든 기기')
+    await expect(page.getByLabel('새 비밀번호', { exact: true })).toHaveCount(0)
+  })
+}
+
 test('password reset handles disabled mail and missing token', async ({ page }) => {
   await page.route('**/api/v1/members/password-reset/options', route => route.fulfill({ json: { available: false } }))
   await page.goto(origin + '/forgot-password')
