@@ -39,7 +39,7 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
         else await api.post('/applications', payload)
         await onSaved(app ? '지원 내역을 수정했습니다.' : '지원 내역을 추가했습니다.')
       } else if (kind === 'status') {
-        const response = await api.patch('/applications/' + app.id + '/status', { status: selectedStatus, appliedDate: app.appliedDate || values.appliedDate || null })
+        const response = await api.patch('/applications/' + app.id + '/status', { status: selectedStatus, appliedDate: app.appliedDate || values.appliedDate || null, version: app.version })
         await onSaved('상태를 변경했습니다.', withInterview && selectedStatus === 'INTERVIEW' ? { kind: 'schedule', app: response.data } : null)
       } else if (kind === 'schedule') {
         const id = app?.id || values.applicationId

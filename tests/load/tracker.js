@@ -131,7 +131,7 @@ export function journey(data) {
     const id = app.id;
     app = appRequest('PUT', id, { ...application('edited'), version: app.version }, [200], session).json();
     verify(app.company === 'Load edited', 'application edit persisted');
-    app = appRequest('PATCH', id, { status: 'INTERVIEW' }, [200], session, '/status').json();
+    app = appRequest('PATCH', id, { status: 'INTERVIEW', version: app.version }, [200], session, '/status').json();
     verify(app.status === 'INTERVIEW', 'status changed');
     app = appRequest('POST', id, schedule(), [201], session, '/schedules').json();
     app = appRequest('POST', id, { ...schedule('Deadline'), type: 'DEADLINE' }, [201], session, '/schedules').json();
@@ -175,7 +175,7 @@ export function contract(data) {
   request('POST', '/applications', { ...application(), memo: 'x'.repeat(33000) }, [413], session);
   appRequest('GET', id, undefined, [403], other);
   appRequest('PUT', id, { ...application(), version: 0 }, [403], other);
-  appRequest('PATCH', id, { status: 'INTERVIEW' }, [403], other, '/status');
+  appRequest('PATCH', id, { status: 'INTERVIEW', version: 0 }, [403], other, '/status');
   appRequest('POST', id, schedule(), [403], other, '/schedules');
   appRequest('DELETE', id, undefined, [403], other);
   let app = appRequest('GET', id, undefined, [200], session).json();
@@ -184,6 +184,11 @@ export function contract(data) {
   appRequest('PUT', id, { ...application('stale'), version: snapshot }, [409], session);
   app = appRequest('GET', id, undefined, [200], session).json();
   verify(app.company === 'Load winner', 'stale application cannot overwrite');
+  const statusVersion = app.version;
+  app = appRequest('PATCH', id, { status: 'ACCEPTED', version: statusVersion }, [200], session, '/status').json();
+  appRequest('PATCH', id, { status: 'INTERVIEW', version: statusVersion }, [409], session, '/status');
+  app = appRequest('GET', id, undefined, [200], session).json();
+  verify(app.status === 'ACCEPTED', 'stale status cannot overwrite');
   const event = app.schedules[0];
   appRequest('PUT', id, { ...schedule('winner'), version: event.version }, [200], session, `/schedules/${event.id}`);
   appRequest('PUT', id, { ...schedule('stale'), version: event.version }, [409], session, `/schedules/${event.id}`);

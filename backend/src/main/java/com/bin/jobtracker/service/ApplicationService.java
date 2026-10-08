@@ -71,6 +71,9 @@ public class ApplicationService {
     public Application changeStatus(Long memberId, Long applicationId,
             com.bin.jobtracker.dto.StatusUpdateRequest request) {
         Application app = findOwned(memberId, applicationId);
+        if (!java.util.Objects.equals(request.version(), app.getVersion())) {
+            throw new org.springframework.dao.OptimisticLockingFailureException("Application was changed");
+        }
         if (request.status() != ApplicationStatus.TO_APPLY && app.getAppliedDate() == null) {
             if (request.appliedDate() == null) throw new IllegalArgumentException("지원일을 입력해 주세요.");
             app.recordAppliedDate(request.appliedDate());

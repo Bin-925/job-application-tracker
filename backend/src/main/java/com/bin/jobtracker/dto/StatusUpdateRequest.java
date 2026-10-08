@@ -4,4 +4,5 @@ import com.bin.jobtracker.enums.ApplicationStatus;
 import jakarta.validation.constraints.NotNull;
 
 public record StatusUpdateRequest(@NotNull ApplicationStatus status,
-        @jakarta.validation.constraints.PastOrPresent java.time.LocalDate appliedDate) {}
+        @jakarta.validation.constraints.PastOrPresent java.time.LocalDate appliedDate,
+        @NotNull @jakarta.validation.constraints.PositiveOrZero Long version) {}

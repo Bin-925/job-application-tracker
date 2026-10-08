@@ -196,13 +196,15 @@ cd ..
 
 | 필수 CI | 검증 내용 |
 |---|---|
-| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 32개 |
-| Backend tests and build | H2/단위·통합 테스트 74개와 bootJar. GreenMail SMTP 포함 |
-| PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 16개 + 복구 이메일 8개, 실제 백업/격리 복원 스크립트 검증 |
+| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 33개 |
+| Backend tests and build | H2/단위·통합 테스트 76개와 bootJar. GreenMail SMTP 포함 |
+| PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 16개 + 복구 이메일 8개 + 지원·일정 9개, 실제 백업/격리 복원 스크립트 검증 |
 | Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |
 | Windows backup permissions | 백업 파일·폴더의 상속 차단, 현재 사용자/SYSTEM 접근 제한, 소유자 보존, 반복 적용 검증 |
 
 숫자는 이 README 기준 개발 버전의 검증 범위입니다. 브라우저 테스트의 API fixture는 실제 백엔드 검증을 대신하지 않습니다.
+
+지원 내용 수정뿐 아니라 상태 변경도 조회 시점의 `version`을 보내야 합니다. 다른 화면에서 먼저 변경했다면 서버가 409로 거절하며, 최신 내용을 다시 조회한 뒤 재시도합니다. 버전이 없는 이전 클라이언트 요청은 400으로 거절합니다.
 
 지원 목록에서 상세를 열었다가 `지원 목록`으로 돌아오면 보기 탭·검색어·상태·정렬을 유지합니다. 상세 주소에 직접 접근한 경우 전체 목록으로 돌아갑니다. 두 상세 진입 링크와 360px/1440px 화면에서 회귀 테스트로 검증합니다.
 
