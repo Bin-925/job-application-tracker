@@ -269,11 +269,31 @@ test('cancelled calendar events can be inspected and restored without leaving th
   expect(applications[0].schedules[0].state).toBe('SCHEDULED')
 })
 
+test('stale status keeps the dialog and does not retry or open an interview schedule', async ({ page }) => {
+  applications = [{ id: 7, version: 3, company: 'Status fixture', position: 'Engineer', status: 'APPLIED', appliedDate: '2026-01-01', schedules: [] }]
+  let writes = 0
+  await page.route('**/applications/7/status', async route => {
+    writes++
+    expect(route.request().postDataJSON().version).toBe(3)
+    await route.fulfill({ status: 409, json: { message: '다른 화면에서 변경된 기록입니다. 새로고침 후 다시 시도해 주세요.' } })
+  })
+  await page.goto(origin + '/applications')
+  await page.getByRole('combobox', { name: 'Status fixture 상태 변경' }).selectOption('INTERVIEW')
+  await page.getByRole('checkbox', { name: '상태 저장 후 면접 일정 등록' }).check()
+  await page.getByRole('button', { name: '상태 저장 후 일정 등록', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('다른 화면에서 변경된 기록')
+  await expect(page.getByRole('button', { name: '상태 저장 후 일정 등록', exact: true })).toBeEnabled()
+  await expect(page.getByRole('dialog', { name: '일정 추가', exact: true })).toHaveCount(0)
+  expect(writes).toBe(1)
+  expect(applications[0].status).toBe('APPLIED')
+})
+
 test('interview option clearly saves status before opening a cancellable schedule form', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 960 })
-  applications = [{ id: 7, company: 'Status fixture', position: 'Engineer', status: 'APPLIED', appliedDate: '2026-01-01', schedules: [] }]
+  applications = [{ id: 7, version: 3, company: 'Status fixture', position: 'Engineer', status: 'APPLIED', appliedDate: '2026-01-01', schedules: [] }]
   await page.route('**/applications/7/status', async route => {
-    applications[0] = { ...applications[0], status: route.request().postDataJSON().status }
+    expect(route.request().postDataJSON().version).toBe(3)
+    applications[0] = { ...applications[0], version: 4, status: route.request().postDataJSON().status }
     await route.fulfill({ json: applications[0] })
   })
   await page.goto(origin + '/applications')

@@ -106,13 +106,13 @@ class ScheduleIntegrationTest {
         Long id = application(sessionId, false);
         String path = "/api/v1/applications/" + id + "/status";
         perform(patch(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"status\":\"APPLIED\"}")).andExpect(status().isBadRequest());
+                .content("{\"status\":\"APPLIED\",\"version\":0}")).andExpect(status().isBadRequest());
         String day = LocalDate.now().minusDays(3).toString();
         perform(patch(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(Map.of("status", "APPLIED", "appliedDate", day))))
+                .content(json.writeValueAsString(Map.of("status", "APPLIED", "appliedDate", day, "version", 0))))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.appliedDate").value(day));
         perform(patch(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId)).contentType(MediaType.APPLICATION_JSON)
-                .content(json.writeValueAsString(Map.of("status", "INTERVIEW", "appliedDate", LocalDate.now().toString()))))
+                .content(json.writeValueAsString(Map.of("status", "INTERVIEW", "appliedDate", LocalDate.now().toString(), "version", 1))))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.appliedDate").value(day)).andExpect(jsonPath("$.schedules.length()").value(0));
     }
 
@@ -123,8 +123,38 @@ class ScheduleIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON).content("{\"type\":\"INTERVIEW\",\"title\":\"\",\"state\":\"SCHEDULED\"}"))
                 .andExpect(status().isBadRequest());
         perform(patch("/api/v1/applications/" + id + "/status").cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId))
-                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("status", "APPLIED", "appliedDate", LocalDate.now().plusDays(1).toString()))))
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(Map.of("status", "APPLIED", "appliedDate", LocalDate.now().plusDays(1).toString(), "version", 0))))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test void staleStatusCannotOverwriteNewerStatus() throws Exception {
+        String sessionId = account("ststatus");
+        Long id = application(sessionId, false);
+        String path = "/api/v1/applications/" + id;
+        var cookie = new jakarta.servlet.http.Cookie("SESSION", sessionId);
+        String day = LocalDate.now().minusDays(1).toString();
+        perform(patch(path + "/status").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("status", "ACCEPTED", "appliedDate", day, "version", 0))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(1));
+        perform(patch(path + "/status").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("status", "INTERVIEW", "appliedDate", day, "version", 0))))
+                .andExpect(status().isConflict());
+        perform(get(path).cookie(cookie)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACCEPTED")).andExpect(jsonPath("$.version").value(1));
+        perform(patch(path + "/status").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("status", "INTERVIEW", "version", 1))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(2));
+    }
+
+    @Test void statusRequiresNonnegativeVersion() throws Exception {
+        String sessionId = account("stversion");
+        Long id = application(sessionId, false);
+        String path = "/api/v1/applications/" + id + "/status";
+        for (String payload : java.util.List.of("{\"status\":\"TO_APPLY\"}",
+                "{\"status\":\"TO_APPLY\",\"version\":-1}")) {
+            perform(patch(path).cookie(new jakarta.servlet.http.Cookie("SESSION", sessionId))
+                    .contentType(MediaType.APPLICATION_JSON).content(payload)).andExpect(status().isBadRequest());
+        }
     }
 
     @Test void applicationDeletionCascadesAndAccountDeletionWorksWithData() throws Exception {
