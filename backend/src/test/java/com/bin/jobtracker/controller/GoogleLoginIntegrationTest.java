@@ -283,6 +283,60 @@ class GoogleLoginIntegrationTest {
         assertThat(flow.callback(started, UUID.randomUUID().toString(), "")).endsWith("/login?googleError");
     }
 
+    @Test void concurrentCodeExchangesKeepEightBrowserIdentitiesSeparated() throws Exception {
+        record Flow(Browser browser, Map<String, String> parameters, String subject, Long memberId) {}
+        var flows = new ArrayList<Flow>();
+        for (int i = 0; i < 8; i++) {
+            var member = member();
+            String subject = UUID.randomUUID().toString();
+            google.link(principal(member), issuer, subject);
+            var browser = new Browser();
+            flows.add(new Flow(browser, browser.begin("LOGIN"), subject, member.getId()));
+        }
+        var start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(flows.size())) {
+            var futures = new ArrayList<Future<String>>();
+            for (var flow : flows) futures.add(executor.submit(() -> {
+                start.await();
+                assertThat(flow.browser().callback(flow.parameters(), flow.subject(), "")).isEqualTo("https://jobtracker.test/");
+                var result = flow.browser().send(get("/api/v1/members/me"), 200);
+                assertThat(mapper.readTree(result.getResponse().getContentAsString()).get("id").asLong()).isEqualTo(flow.memberId());
+                return flow.browser().cookie.getValue();
+            }));
+            start.countDown();
+            var cookies = new HashSet<String>();
+            for (var future : futures) cookies.add(future.get(30, TimeUnit.SECONDS));
+            assertThat(cookies).hasSize(flows.size());
+        }
+    }
+
+    @Test void authorizationStateFromAnotherBrowserCannotAuthenticateEitherAccount() throws Exception {
+        var first = new Browser();
+        var second = new Browser();
+        var firstFlow = first.begin("LOGIN");
+        var secondFlow = second.begin("LOGIN");
+        int before = exchanges.get();
+        assertThat(first.callback(secondFlow, "cross-browser-second", "")).endsWith("/login?googleError");
+        assertThat(second.callback(firstFlow, "cross-browser-first", "")).endsWith("/login?googleError");
+        first.send(get("/api/v1/members/me"), 401);
+        second.send(get("/api/v1/members/me"), 401);
+        assertThat(exchanges.get()).isEqualTo(before);
+    }
+
+    @Test void completedAuthorizationStateCannotBeReplayedAfterLogout() throws Exception {
+        var member = member();
+        String subject = UUID.randomUUID().toString();
+        google.link(principal(member), issuer, subject);
+        var browser = new Browser();
+        var flow = browser.begin("LOGIN");
+        assertThat(browser.callback(flow, subject, "")).isEqualTo("https://jobtracker.test/");
+        browser.write("/members/logout", Map.of(), 204);
+        int before = exchanges.get();
+        assertThat(browser.callback(flow, subject, "")).endsWith("/login?googleError");
+        browser.send(get("/api/v1/members/me"), 401);
+        assertThat(exchanges.get()).isEqualTo(before);
+    }
+
     @Test void concurrentGoogleSignupCreatesOneMemberWithoutOrphans() throws Exception {
         String subject = UUID.randomUUID().toString(); long before = memberRepository.count();
         var start = new CountDownLatch(1);

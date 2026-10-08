@@ -5,6 +5,12 @@ plugins {
 }
 group = 'com.bin'
 version = '0.0.1-SNAPSHOT'
+// Security maintenance within the current major lines; see docs/SECURITY_ASSURANCE_2026-10-08.md.
+ext['jackson-bom.version'] = '2.21.7'
+ext['tomcat.version'] = '10.1.60'
+ext['postgresql.version'] = '42.7.12'
+ext['log4j2.version'] = '2.25.5'
+ext['commons-lang3.version'] = '3.18.0'
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)

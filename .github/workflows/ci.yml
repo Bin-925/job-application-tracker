@@ -39,9 +39,11 @@ jobs:
           cache: npm
           cache-dependency-path: .github/package-lock.json
       - run: npm ci --ignore-scripts
+      - name: Audit workflow test dependencies
+        run: npm audit
       - run: npm test
       - name: Verify load-test safety configuration
-        run: node --test ../tests/load/config.test.mjs
+        run: node --test ../tests/load/config.test.mjs ../tests/load/additional-config.test.mjs
 
   frontend:
     name: Frontend and PWA
@@ -61,6 +63,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - name: Audit frontend dependencies
+        run: pnpm audit
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build

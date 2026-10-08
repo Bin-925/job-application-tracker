@@ -1,5 +1,15 @@
 name: jobtracker-load
 services:
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    container_name: jobtracker-load-mailpit
+    labels:
+      com.jobtracker.purpose: load-test
+    ports:
+      - "127.0.0.1:15435:1025"
+      - "127.0.0.1:15436:8025"
+    mem_limit: 128m
+    cpus: 0.5
   postgres:
     image: postgres:17-alpine
     container_name: jobtracker-load-postgres
