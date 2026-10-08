@@ -40,7 +40,8 @@ export function Workspace() {
     return () => { active = false; ++requests.current; clearInterval(timer); window.removeEventListener('online', updateNetwork); window.removeEventListener('offline', updateNetwork) }
   }, [refresh])
   useEffect(() => { if (notice) { const timer = setTimeout(() => setNotice(''), 5000); return () => clearTimeout(timer) } }, [notice])
-  const context = { apps, now, refresh, open: setEditor, notify: setNotice }
+  const accountRoute = pathname === '/mypage' || pathname.startsWith('/mypage/')
+  const context = { apps, applicationCount: loaded && !error ? apps.length : null, now, refresh, open: setEditor, notify: setNotice }
   return <div className="workspace">
     <aside className="navigation"><NavLink to="/" className="brand"><NotebookPen size={25} />취준노트</NavLink>
       <nav aria-label="주 메뉴">{[[House, '/', '오늘'], [BriefcaseBusiness, '/applications', '지원'], [CalendarDays, '/calendar', '일정'], [UserRound, '/mypage', '내 정보']].map(([Icon, path, label]) => <NavLink key={path} to={path} end={path === '/'}><Icon size={21} /><span>{label}</span></NavLink>)}</nav>
@@ -52,7 +53,7 @@ export function Workspace() {
       <PwaStatus />
       <SessionNotice />
       {error && <section className="notice"><p role="alert">{error}</p><button onClick={refresh}><RefreshCw size={16} />다시 시도</button></section>}
-      {loading ? <p className="empty" role="status">지원 내역을 불러오는 중…</p> : loaded && <Outlet context={context} />}
+      {accountRoute || loaded ? <Outlet context={context} /> : loading && <p className="empty" role="status">지원 내역을 불러오는 중…</p>}
       {!pathname.startsWith('/mypage') && pathname !== '/calendar' && <button className="fab" title="지원 추가" aria-label="지원 추가" onClick={() => setEditor({ kind: 'application' })}><Plus size={26} /></button>}
     </div>
     {editor && <Editor key={editor.kind + '-' + (editor.app?.id || '') + '-' + (editor.event?.id || '')} {...editor} apps={apps} onClose={() => setEditor(null)} onSaved={async (message, next) => { await refresh(); setEditor(next || null); setNotice(message) }} />}

@@ -574,6 +574,55 @@ for (const status of [503, 0]) {
   })
 }
 
+for (const width of [360, 1440]) {
+  test(`account remains usable during initial application failure at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 960 })
+    await page.route('**/api/v1/applications', route => route.fulfill({ status: 503, json: { message: '지원 목록을 불러오지 못했습니다.' } }))
+    let logouts = 0
+    await page.route('**/api/v1/members/logout', route => {
+      logouts++
+      currentMember = null
+      memberStatus = 401
+      return route.fulfill({ status: 204 })
+    })
+    await page.goto(origin + (width === 360 ? '/mypage/account/password' : '/mypage'))
+    await expect(page.getByRole('heading', { name: '내 정보', exact: true })).toBeVisible()
+    await expect(page.getByRole('alert')).toContainText('지원 목록을 불러오지 못했습니다.')
+    await expect(page.getByRole('button', { name: '다시 시도', exact: true })).toHaveCSS('white-space', 'nowrap')
+    await expect(page.getByRole('textbox', { name: '닉네임', exact: true })).toBeEnabled()
+    await page.getByRole('button', { name: '회원 탈퇴', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: '회원 탈퇴', exact: true })
+    await expect(dialog).toContainText('모든 지원 내역')
+    await expect(dialog).not.toContainText('0건')
+    await dialog.getByRole('button', { name: '취소', exact: true }).click()
+    await page.screenshot({ path: test.info().outputPath(`account-list-failure-${width}.png`), fullPage: true })
+    await page.getByRole('button', { name: '로그아웃', exact: true }).click()
+    await expect(page).toHaveURL(origin + '/login')
+    expect(logouts).toBe(1)
+  })
+}
+
+test('pending application list does not block or remount account inputs', async ({ page }) => {
+  holdLists = true
+  await page.goto(origin + '/mypage')
+  await expect(page.getByRole('textbox', { name: '닉네임', exact: true })).toBeVisible()
+  await page.getByRole('textbox', { name: '닉네임', exact: true }).fill('유지할입력')
+  await expect.poll(() => pendingLists.length).toBeGreaterThan(0)
+  holdLists = false
+  pendingLists.splice(0).forEach(response => response.end('[]'))
+  await expect(page.getByRole('textbox', { name: '닉네임', exact: true })).toHaveValue('유지할입력')
+  await page.getByRole('button', { name: '회원 탈퇴', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: '회원 탈퇴', exact: true })).toContainText('지원 내역 0건')
+})
+
+test('unauthenticated account route still requires login', async ({ page }) => {
+  memberStatus = 401
+  currentMember = null
+  await page.goto(origin + '/mypage')
+  await expect(page).toHaveURL(origin + '/login')
+  await expect(page.getByRole('heading', { name: '내 정보', exact: true })).toHaveCount(0)
+})
+
 test('initial session failure blocks private UI and retry recovers', async ({ page }) => {
   memberStatus = 503
   await page.goto(origin)
