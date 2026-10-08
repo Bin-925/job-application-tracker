@@ -25,7 +25,11 @@ export function SessionProvider({ children }) {
       return data
     } catch (error) {
       if (current === revision.current) {
-        if (error.response?.status === 401) { clearDeviceDrafts(); navigationProtection.clear(); confirmedMember.current = null }
+        if (error.response?.status === 401) {
+          clearDeviceDrafts()
+          if (confirmedMember.current !== null) navigationProtection.clear()
+          confirmedMember.current = null
+        }
         setSession(previous => {
         if (error.response?.status === 401) return { status: 'anonymous', member: null, verifying: false, verificationError: false }
         // A failed background probe is not proof of logout. Keep drafts in memory.
@@ -40,8 +44,12 @@ export function SessionProvider({ children }) {
     const requests = revision
     discardLegacyToken()
     queueMicrotask(() => { if (active) refreshSession() })
-    const clearPrivateState = () => { clearDeviceDrafts(); navigationProtection.clear(); confirmedMember.current = null }
-    const expired = () => { ++revision.current; clearPrivateState(); setSession({ status: 'anonymous', member: null, verifying: false, verificationError: false }) }
+    const clearPrivateState = (preserveAnonymous = false) => {
+      clearDeviceDrafts()
+      if (!preserveAnonymous || confirmedMember.current !== null) navigationProtection.clear()
+      confirmedMember.current = null
+    }
+    const expired = () => { ++revision.current; clearPrivateState(true); setSession({ status: 'anonymous', member: null, verifying: false, verificationError: false }) }
     const changed = () => { clearPrivateState(); setSession({ status: 'checking', member: null, verifying: false, verificationError: false }); refreshSession() }
     const storage = event => { if (event.key === AUTH_STORAGE_KEY) changed() }
     window.addEventListener('auth-expired', expired)
