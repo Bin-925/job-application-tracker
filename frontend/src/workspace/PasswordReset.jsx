@@ -12,10 +12,9 @@ export function PasswordReset({ confirm = false }) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
-  const [dirty, setDirty] = useState(false)
   const [retry, setRetry] = useState(0)
   const pending = useRef(null)
-  useFormProtection(busy || dirty)
+  const protection = useFormProtection(busy)
   useEffect(() => {
     if (confirm) window.history.replaceState(window.history.state, '', window.location.pathname)
     const controller = new AbortController()
@@ -41,7 +40,7 @@ export function PasswordReset({ confirm = false }) {
         confirm ? { token, newPassword: fields.newPassword } : { username: fields.username, email: fields.email },
         { signal: request.signal })
       if (request.signal.aborted) return
-      form.reset(); setDirty(false); setDone(true)
+      form.reset(); protection.clear(); setDone(true)
       if (confirm) { setToken(''); notifySessionChanged() }
     } catch (failure) { if (!request.signal.aborted) setError(errorMessage(failure)) }
     finally { if (!request.signal.aborted) setBusy(false) }
@@ -51,7 +50,7 @@ export function PasswordReset({ confirm = false }) {
       {done ? <p role="status">{confirm ? '비밀번호를 변경하고 모든 기기에서 로그아웃했습니다. 새 비밀번호로 로그인해 주세요.' : '입력한 정보와 인증된 복구 이메일이 일치하면 재설정 메일을 보내드립니다. 스팸함도 확인해 주세요. 메일이 오지 않으면 잠시 후 다시 요청해 주세요.'}</p>
         : confirm && !valid ? <p role="alert">유효한 재설정 링크가 없습니다. 메일의 링크를 다시 열거나 새 메일을 요청해 주세요.</p>
           : !confirm && available !== true ? <p role="status">{available === false ? '현재 이메일 복구 기능을 사용할 수 없습니다. 잠시 후 다시 시도해 주세요.' : '이메일 복구 기능을 확인하고 있습니다.'}</p>
-            : <form onSubmit={submit} onChange={() => setDirty(true)}>
+            : <form onSubmit={submit} onChange={protection.markDirty}>
               {confirm ? <>
                 <p className="muted">변경하면 모든 기기에서 다시 로그인해야 합니다.</p>
                 <label>새 비밀번호<input name="newPassword" type="password" required autoComplete="new-password" minLength={8} maxLength={30} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,30}" title="영문과 숫자를 포함한 8~30자" aria-describedby="reset-password-rule" /></label>

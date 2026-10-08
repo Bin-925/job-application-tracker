@@ -18,6 +18,7 @@ export function Workspace() {
   const [online, setOnline] = useState(navigator.onLine)
   const [now, setNow] = useState(new Date())
   const revision = useRef(0)
+  useEffect(() => { queueMicrotask(() => setEditor(null)) }, [pathname])
   const refresh = useCallback(async () => {
     const current = ++revision.current
     try {
