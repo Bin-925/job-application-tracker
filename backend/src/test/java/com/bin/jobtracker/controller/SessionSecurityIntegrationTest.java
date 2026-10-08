@@ -190,6 +190,21 @@ class SessionSecurityIntegrationTest {
         browser.send(get(ROOT + "/me"), 200);
     }
 
+    @Test void avatarUpdateIsBoundToCurrentMemberAndValidatesInputAndCsrf() throws Exception {
+        var first = loggedIn();
+        var second = loggedIn();
+        long other = body(second.send(get(ROOT + "/me"), 200)).get("id").asLong();
+        first.send(patch(ROOT + "/me/avatar").contentType(MediaType.APPLICATION_JSON).content("{\"avatar\":\"green\"}"), 403);
+        first.write(patch(ROOT + "/me/avatar"), Map.of("avatar", " "), 400);
+        first.write(patch(ROOT + "/me/avatar"), Map.of("avatar", "x".repeat(33)), 400);
+        var changed = body(first.write(patch(ROOT + "/me/avatar"), Map.of("avatar", "green", "memberId", other), 200));
+        assertThat(changed.get("avatar").asText()).isEqualTo("green");
+        assertThat(body(first.send(get(ROOT + "/me"), 200)).get("avatar").asText()).isEqualTo("green");
+        assertThat(body(second.send(get(ROOT + "/me"), 200)).get("avatar").asText()).isEqualTo("blue");
+        var anonymous = new Browser();
+        anonymous.write(patch(ROOT + "/me/avatar"), Map.of("avatar", "green"), 401);
+    }
+
     @Test void logoutInvalidatesCookieAndReplay() throws Exception {
         var browser = loggedIn();
         Cookie previous = browser.cookie;
