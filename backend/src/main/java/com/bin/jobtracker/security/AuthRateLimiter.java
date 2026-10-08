@@ -43,6 +43,7 @@ public class AuthRateLimiter {
                 || path.equals("/api/v1/members/me/password")
                 || path.equals("/api/v1/members/me/recovery-email/requests")
                 || path.equals("/api/v1/members/recovery-email/confirm")
+                || path.startsWith("/api/v1/members/password-reset/")
                 || (path.equals("/api/v1/members/me") && method.equals("DELETE"));
         if (!protectedRequest) return;
         consume(global);
@@ -75,6 +76,13 @@ public class AuthRateLimiter {
     private void check(String scope, String identity, int capacity, Duration period) {
         String key = scope + ":" + digest(identity);
         consume(buckets.get(key, ignored -> bucket(capacity, period)));
+    }
+
+    public void checkPasswordReset(String username, String email) {
+        if (!properties.enabled()) return;
+        check("reset-account-minute", username.toLowerCase(Locale.ROOT), 1, Duration.ofMinutes(1));
+        check("reset-account", username.toLowerCase(Locale.ROOT), 3, Duration.ofHours(1));
+        check("reset-recipient", email.toLowerCase(Locale.ROOT), 3, Duration.ofHours(1));
     }
 
     private Bucket bucket(int capacity, Duration period) {

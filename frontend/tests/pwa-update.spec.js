@@ -63,6 +63,61 @@ test.afterEach(async () => {
   await new Promise(resolve => server.close(resolve))
 })
 
+test('password reset request reports accepted without exposing an account and retains rejected input', async ({ page }) => {
+  await page.route('**/api/v1/members/password-reset/options', route => route.fulfill({ json: { available: true } }))
+  let attempts = 0
+  await page.route('**/api/v1/members/password-reset/requests', route => {
+    attempts++
+    expect(route.request().postDataJSON()).toEqual({ username: 'missing', email: 'user@example.test' })
+    return route.fulfill(attempts === 1 ? { status: 429, json: { message: '잠시 후 다시 시도해 주세요.' } } : { status: 202 })
+  })
+  await page.setViewportSize({ width: 360, height: 800 })
+  await page.goto(origin + '/forgot-password')
+  await page.getByLabel('아이디', { exact: true }).fill('missing')
+  await page.getByLabel('복구 이메일', { exact: true }).fill('user@example.test')
+  await page.getByRole('button', { name: '재설정 메일 요청' }).click()
+  await expect(page.getByRole('alert')).toContainText('잠시 후')
+  await expect(page.getByLabel('아이디', { exact: true })).toHaveValue('missing')
+  await page.getByRole('button', { name: '재설정 메일 요청' }).click()
+  await expect(page.getByRole('status')).toContainText('일치하면')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+})
+
+test('password reset link requires explicit submission and matching passwords, clears fragment and never auto logs in', async ({ page }) => {
+  const token = 't'.repeat(43)
+  let sent = 0, logins = 0
+  await page.route('**/api/v1/members/login', route => { logins++; return route.fulfill({ json: member }) })
+  await page.route('**/api/v1/members/password-reset/confirm', route => {
+    sent++
+    expect(route.request().postDataJSON()).toEqual({ token, newPassword: 'Changed123' })
+    return route.fulfill(sent === 1 ? { status: 400, json: { message: '현재 비밀번호와 다른 비밀번호를 입력해 주세요.' } } : { status: 204 })
+  })
+  await page.goto(origin + '/reset-password#token=' + token)
+  await expect(page).toHaveURL(origin + '/reset-password')
+  expect(sent).toBe(0)
+  await page.getByLabel('새 비밀번호', { exact: true }).fill('Changed123')
+  await page.getByLabel('새 비밀번호 확인', { exact: true }).fill('Mismatch123')
+  await page.getByRole('button', { name: '비밀번호 변경', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('일치하지')
+  expect(sent).toBe(0)
+  await page.getByLabel('새 비밀번호 확인', { exact: true }).fill('Changed123')
+  await page.getByRole('button', { name: '비밀번호 변경', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('다른 비밀번호')
+  await page.getByRole('button', { name: '비밀번호 변경', exact: true }).click()
+  await expect(page.getByRole('status')).toContainText('모든 기기')
+  await expect(page.getByLabel('새 비밀번호', { exact: true })).toHaveCount(0)
+  expect(logins).toBe(0)
+})
+
+test('password reset handles disabled mail and missing token', async ({ page }) => {
+  await page.route('**/api/v1/members/password-reset/options', route => route.fulfill({ json: { available: false } }))
+  await page.goto(origin + '/forgot-password')
+  await expect(page.getByRole('status')).toContainText('사용할 수 없습니다')
+  await expect(page.getByRole('button', { name: '재설정 메일 요청' })).toHaveCount(0)
+  await page.goto(origin + '/reset-password')
+  await expect(page.getByRole('alert')).toContainText('유효한 재설정 링크가 없습니다')
+})
+
 test('recovery email request preserves errors and clears password after successful delivery', async ({ page }) => {
   let sent = false, body
   await page.route('**/api/v1/members/me/recovery-email', route => route.fulfill({ json: { available: true, verifiedEmail: 'old@example.test', pendingEmail: sent ? 'new@example.test' : null, expiresAt: '2026-10-04T12:00:00Z' } }))

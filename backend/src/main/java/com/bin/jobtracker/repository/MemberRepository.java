@@ -11,5 +11,7 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findForUpdate(@org.springframework.data.repository.query.Param("id") Long id);
 
     Optional<Member> findByUsername(String username);
+    @org.springframework.data.jpa.repository.Query("select m.id from Member m where m.username = :username")
+    Optional<Long> findIdByUsername(@org.springframework.data.repository.query.Param("username") String username);
     boolean existsByUsername(String username);
 }
