@@ -51,6 +51,17 @@ class AuthRateLimiterTest {
                 .isInstanceOf(RateLimitException.class);
     }
 
+    @Test void registrationEmailCooldownAndHourlyBudget() {
+        var limiter = limiter(true);
+        limiter.checkRegistrationEmail("recipient@example.test");
+        assertThatThrownBy(() -> limiter.checkRegistrationEmail("RECIPIENT@example.test")).isInstanceOf(RateLimitException.class);
+        nanos.addAndGet(Duration.ofMinutes(1).toNanos()); limiter.checkRegistrationEmail("recipient@example.test");
+        nanos.addAndGet(Duration.ofMinutes(1).toNanos()); limiter.checkRegistrationEmail("recipient@example.test");
+        nanos.addAndGet(Duration.ofMinutes(1).toNanos());
+        assertThatThrownBy(() -> limiter.checkRegistrationEmail("recipient@example.test")).isInstanceOf(RateLimitException.class);
+        assertThatCode(() -> limiter.checkRegistrationEmail("other@example.test")).doesNotThrowAnyException();
+    }
+
     @Test void ipBudgetIsSharedAcrossSensitiveEndpointsButNotOtherIps() {
         var limiter = limiter(true);
         limiter.checkRequest("127.0.0.1", "/api/v1/members/login", "POST");

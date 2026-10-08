@@ -97,6 +97,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/members/recovery-email/confirm").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/members/password-reset/options").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/members/registration/options").permitAll()
+                        .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/members/registration/requests",
+                                "/api/v1/members/registration/confirm").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/members/password-reset/requests",
                                 "/api/v1/members/password-reset/confirm").permitAll()
                         .requestMatchers("/api/v1/members/csrf", "/api/v1/members/join",

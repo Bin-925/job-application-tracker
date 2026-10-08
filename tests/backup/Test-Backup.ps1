@@ -50,6 +50,8 @@ try {
     if ($sourceTokens -ne '1') { throw 'Backup changed original verification tokens' }
     $sourceResets = Invoke-BackupDocker @('exec',$source,'psql','-U','jobtracker_admin','-d','jobtracker','-X','-qAt','-c','SELECT count(*) FROM password_reset_token')
     if ($sourceResets -ne '1') { throw 'Backup changed original password reset tokens' }
+    $sourceRegistrations = Invoke-BackupDocker @('exec',$source,'psql','-U','jobtracker_admin','-d','jobtracker','-X','-qAt','-c','SELECT count(*) FROM registration_token')
+    if ($sourceRegistrations -ne '1') { throw 'Backup changed original registration tokens' }
     Write-Output 'PASS: Unicode/memo/date/version/ownership data digests, sequences and constraints, excluded sessions, unchanged source'
     $corrupt = Join-Path $output 'corrupt.dump'
     Copy-Item -LiteralPath $backup -Destination $corrupt

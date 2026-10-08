@@ -44,13 +44,14 @@ public class AuthRateLimiter {
                 || path.equals("/api/v1/members/me/recovery-email/requests")
                 || path.equals("/api/v1/members/recovery-email/confirm")
                 || path.startsWith("/api/v1/members/password-reset/")
+                || path.startsWith("/api/v1/members/registration/")
                 || (path.equals("/api/v1/members/me") && method.equals("DELETE"));
         if (!protectedRequest) return;
         consume(global);
         check(csrf ? "csrf-ip" : "auth-ip", ip,
                 csrf ? properties.csrfRequestsPerIpPerMinute() : properties.requestsPerIpPerMinute(),
                 Duration.ofMinutes(1));
-        if (path.equals("/api/v1/members/join")) {
+        if (path.equals("/api/v1/members/join") || path.equals("/api/v1/members/registration/requests")) {
             check("join-ip", ip, properties.registrationsPerIp(), Duration.ofSeconds(properties.accountWindowSeconds()));
         }
     }
@@ -83,6 +84,12 @@ public class AuthRateLimiter {
         check("reset-account-minute", username.toLowerCase(Locale.ROOT), 1, Duration.ofMinutes(1));
         check("reset-account", username.toLowerCase(Locale.ROOT), 3, Duration.ofHours(1));
         check("reset-recipient", email.toLowerCase(Locale.ROOT), 3, Duration.ofHours(1));
+    }
+
+    public void checkRegistrationEmail(String email) {
+        if (!properties.enabled()) return;
+        check("registration-minute", email.toLowerCase(Locale.ROOT), 1, Duration.ofMinutes(1));
+        check("registration-recipient", email.toLowerCase(Locale.ROOT), 3, Duration.ofHours(1));
     }
 
     private Bucket bucket(int capacity, Duration period) {

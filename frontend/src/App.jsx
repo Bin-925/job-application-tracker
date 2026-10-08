@@ -4,6 +4,7 @@ import { Workspace } from './workspace/Workspace'
 import { AuthPage } from './workspace/AuthPage'
 import { VerifyRecoveryEmail } from './workspace/RecoveryEmail'
 import { PasswordReset } from './workspace/PasswordReset'
+import { Registration, RegistrationPage } from './workspace/Registration'
 import { Today, Applications, Calendar, Detail, Settings, ApplicationAction } from './workspace/Pages'
 import { SessionProvider } from './store/SessionProvider'
 import { useSession } from './store/sessionContext'
@@ -25,7 +26,8 @@ function ScrollReset() {
 export default function App() {
   return <SessionProvider><BrowserRouter><ScrollReset /><Routes>
     <Route path="/login" element={<AuthPage key="login" />} />
-    <Route path="/join" element={<AuthPage key="join" join />} />
+    <Route path="/join" element={<RegistrationPage />} />
+    <Route path="/verify-registration" element={<Registration confirm />} />
     <Route path="/verify-email" element={<VerifyRecoveryEmail />} />
     <Route path="/forgot-password" element={<PasswordReset key="request" />} />
     <Route path="/reset-password" element={<PasswordReset key="confirm" confirm />} />

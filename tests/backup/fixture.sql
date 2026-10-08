@@ -15,3 +15,5 @@ INSERT INTO recovery_email_verification(member_id,email,token_hash,auth_version,
 VALUES (41,'fixture@example.test',repeat('a',64),7,now() + interval '30 minutes',now());
 INSERT INTO password_reset_token(member_id,email,token_hash,auth_version,expires_at,issued_at)
 VALUES (41,'fixture@example.test',repeat('b',64),7,now() + interval '15 minutes',now());
+INSERT INTO registration_token(token_hash,email,expires_at)
+VALUES (repeat('c',64),'signup@example.test',now() + interval '30 minutes');
