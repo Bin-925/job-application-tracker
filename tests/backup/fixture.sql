@@ -17,3 +17,6 @@ INSERT INTO password_reset_token(member_id,email,token_hash,auth_version,expires
 VALUES (41,'fixture@example.test',repeat('b',64),7,now() + interval '15 minutes',now());
 INSERT INTO registration_token(token_hash,email,expires_at)
 VALUES (repeat('c',64),'signup@example.test',now() + interval '30 minutes');
+INSERT INTO google_identity(member_id,issuer,subject) VALUES (41,'https://accounts.google.com','backup-fixture');
+INSERT INTO google_reauthentication(member_id,token_hash,auth_version,expires_at)
+VALUES (41,repeat('d',64),7,now() + interval '5 minutes');

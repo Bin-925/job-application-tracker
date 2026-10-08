@@ -39,7 +39,7 @@ import java.util.List;
 import java.time.Clock;
 
 @Configuration
-@EnableConfigurationProperties(AuthRateLimitProperties.class)
+@EnableConfigurationProperties({AuthRateLimitProperties.class, com.bin.jobtracker.security.GoogleProperties.class})
 public class SecurityConfig {
     @Bean
     Clock sessionClock() { return Clock.systemUTC(); }
@@ -83,7 +83,8 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain filterChain(HttpSecurity http, MemberRepository members,
             SecurityContextRepository contexts, CsrfTokenRepository csrf, AuthRateLimiter limiter,
-            ObjectMapper json, SessionPolicy policy, @Value("${app.request.max-body-bytes:32768}") int maxBodyBytes) throws Exception {
+            ObjectMapper json, SessionPolicy policy, com.bin.jobtracker.security.GoogleLoginSecurity google,
+            @Value("${app.request.max-body-bytes:32768}") int maxBodyBytes) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(config -> config.csrfTokenRepository(csrf))
                 .securityContext(config -> config.securityContextRepository(contexts).requireExplicitSave(true))
@@ -95,6 +96,7 @@ public class SecurityConfig {
                 .headers(headers -> headers.cacheControl(cache -> cache.disable())
                         .addHeaderWriter(new StaticHeadersWriter("Cache-Control", "private, no-store")))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/v1/oauth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/members/recovery-email/confirm").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/members/password-reset/options").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/members/registration/options").permitAll()
@@ -119,6 +121,7 @@ public class SecurityConfig {
                         }))
                 .addFilterBefore(new ApiRequestGuardFilter(limiter, json, maxBodyBytes), CsrfFilter.class)
                 .addFilterAfter(new SessionValidityFilter(members, policy), CsrfFilter.class);
+        google.configure(http);
         return http.build();
     }
 

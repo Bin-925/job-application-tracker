@@ -140,6 +140,91 @@ test('registration does not confuse a currently signed-in account with a new one
   await expect(page.getByRole('link', { name: '내 정보로 이동' })).toHaveAttribute('href', '/mypage')
 })
 
+test('Google login is hidden while disabled and refuses an untrusted redirect', async ({ page }) => {
+  memberStatus = 401
+  let enabled = false
+  await page.route('**/api/v1/oauth/google/options', route => route.fulfill({ json: { enabled } }))
+  await page.goto(origin + '/login')
+  await expect(page.getByRole('button', { name: '로그인', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Google로 계속하기' })).toHaveCount(0)
+  enabled = true
+  await page.reload()
+  await page.route('**/api/v1/oauth/google/start', route => {
+    expect(route.request().postDataJSON()).toEqual({ mode: 'LOGIN', rememberMe: true })
+    return route.fulfill({ json: { authorizationUrl: 'https://untrusted.invalid' } })
+  })
+  await page.getByRole('checkbox', { name: '로그인 상태 유지', exact: true }).check()
+  await page.getByRole('button', { name: 'Google로 계속하기' }).click()
+  await expect(page.getByRole('alert')).toContainText('인증 경로를 확인할 수 없습니다')
+  await expect(page).toHaveURL(origin + '/login')
+})
+
+test('Google enrollment uses only username and nickname and preserves duplicate input', async ({ page }) => {
+  memberStatus = 401
+  await page.route('**/api/v1/oauth/google/enrollment', route => route.fulfill({ json: { pending: true } }))
+  await page.route('**/api/v1/oauth/google/complete', route => {
+    expect(route.request().postDataJSON()).toEqual({ username: 'existing', nickname: '지원자' })
+    return route.fulfill({ status: 409, json: { message: '이미 사용 중인 아이디입니다.' } })
+  })
+  await page.goto(origin + '/complete-google-signup')
+  await page.getByLabel('아이디', { exact: true }).fill('existing')
+  await page.getByLabel('닉네임', { exact: true }).fill('지원자')
+  await expect(page.getByLabel('비밀번호', { exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: '가입 완료', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('이미 사용 중')
+  await expect(page.getByLabel('닉네임', { exact: true })).toHaveValue('지원자')
+})
+
+test('expired Google enrollment and cancelled authentication are recoverable', async ({ page }) => {
+  memberStatus = 401
+  await page.route('**/api/v1/oauth/google/enrollment', route => route.fulfill({ json: { pending: false } }))
+  await page.goto(origin + '/complete-google-signup')
+  await expect(page.getByRole('status')).toContainText('Google 인증을 다시 진행')
+  await expect(page.getByRole('button', { name: '가입 완료', exact: true })).toHaveCount(0)
+  await page.goto(origin + '/login?googleError')
+  await expect(page.getByRole('alert')).toContainText('Google 인증을 완료하지 못했습니다')
+})
+
+for (const width of [360, 1440]) {
+  test(`Google-only account requires fresh proof and consumes it after email request at ${width}px`, async ({ page }) => {
+    currentMember = { ...member, hasPassword: false }
+    await page.route('**/api/v1/members/me/login-methods', route => route.fulfill({ json: { googleEnabled: true, googleLinked: true, hasPassword: false, googleVerified: true } }))
+    await page.route('**/api/v1/members/me/recovery-email', route => route.fulfill({ json: { available: true, verifiedEmail: null, pendingEmail: null } }))
+    await page.route('**/api/v1/members/me/google/recovery-email', route => {
+      expect(route.request().postDataJSON()).toEqual({ email: 'verify@example.test' })
+      return route.fulfill({ status: 204 })
+    })
+    await page.setViewportSize({ width, height: 1000 })
+    await page.goto(origin + '/mypage')
+    await expect(page.getByRole('button', { name: 'Google 연결 해제' })).toHaveCount(0)
+    await expect(page.getByLabel('이메일 등록용 현재 비밀번호')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '비밀번호 추가', exact: true })).toBeEnabled()
+    await page.getByLabel('복구 이메일', { exact: true }).fill('verify@example.test')
+    await page.getByRole('button', { name: '인증 메일 보내기' }).click()
+    await expect(page.getByText(/인증 메일을 발송 서버에 전달했습니다/)).toBeVisible()
+    await expect(page.getByRole('button', { name: '비밀번호 추가', exact: true })).toBeDisabled()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  })
+}
+
+test('Google-only account deletion needs confirmation and fresh proof', async ({ page }) => {
+  currentMember = { ...member, hasPassword: false }
+  await page.route('**/api/v1/members/me/login-methods', route => route.fulfill({ json: { googleEnabled: true, googleLinked: true, hasPassword: false, googleVerified: true } }))
+  await page.route('**/api/v1/members/me/recovery-email', route => route.fulfill({ json: { available: false } }))
+  let deleted = 0
+  await page.route('**/api/v1/members/me/google/delete', route => {
+    deleted++; memberStatus = 401; return route.fulfill({ status: 204 })
+  })
+  await page.goto(origin + '/mypage')
+  await page.getByRole('button', { name: '회원 탈퇴', exact: true }).click()
+  await page.getByRole('button', { name: '계정 영구 삭제' }).click()
+  expect(deleted).toBe(0)
+  await page.getByRole('checkbox', { name: '삭제되는 내용을 확인했습니다.' }).check()
+  await page.getByRole('button', { name: '계정 영구 삭제' }).click()
+  await expect(page).toHaveURL(origin + '/login')
+  expect(deleted).toBe(1)
+})
+
 test('password reset request reports accepted without exposing an account and retains rejected input', async ({ page }) => {
   await page.route('**/api/v1/members/password-reset/options', route => route.fulfill({ json: { available: true } }))
   let attempts = 0

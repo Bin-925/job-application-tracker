@@ -7,7 +7,7 @@ import { notifySessionChanged } from '../store/auth'
 import { useSession } from '../store/sessionContext'
 import { useFormProtection } from './useFormProtection'
 
-export function RecoveryEmail() {
+export function RecoveryEmail({ social = false, googleVerified = false, onProofConsumed }) {
   const { canMutate } = useSession()
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
@@ -35,9 +35,10 @@ export function RecoveryEmail() {
     pending.current = request
     setBusy(true); setError(''); setNotice('')
     try {
-      await api.post('/members/me/recovery-email/requests', body, { signal: request.signal })
+      await api.post(social ? '/members/me/google/recovery-email' : '/members/me/recovery-email/requests', body, { signal: request.signal })
       if (request.signal.aborted) return
       form.reset(); protection.clear()
+      if (social) onProofConsumed?.()
       setNotice('인증 메일을 발송 서버에 전달했습니다. 수신함과 스팸함을 확인해 주세요. 재발송은 1분 뒤 가능합니다.')
       await load(request.signal)
     } catch (failure) { if (!request.signal.aborted) setError(errorMessage(failure)) }
@@ -50,11 +51,12 @@ export function RecoveryEmail() {
     {data && <><p>{data.verifiedEmail ? `인증된 이메일: ${data.verifiedEmail}` : '인증된 복구 이메일이 없습니다.'}</p>
       {data.pendingEmail && <p role="status">인증 대기: {data.pendingEmail}<br />{new Date(data.expiresAt).toLocaleString('ko-KR')}까지</p>}
       {!data.available ? <p className="muted">현재 이메일 인증을 사용할 수 없습니다.</p> : <>
-        <p className="muted">인증 완료 후 모든 기기에서 다시 로그인해야 합니다. 비밀번호 재설정은 아직 준비 중입니다.</p>
+        <p className="muted">인증 완료 후 모든 기기에서 다시 로그인해야 합니다.</p>
+        {social && !googleVerified && <p className="muted">이메일 등록 전 Google 계정을 다시 확인해 주세요.</p>}
         <form onSubmit={submit} onChange={protection.markDirty}>
           <label>복구 이메일<input name="email" type="email" autoComplete="email" required maxLength={254} disabled={busy} /></label>
-          <label>이메일 등록용 현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" required maxLength={72} disabled={busy} /></label>
-          <div><button disabled={busy || !canMutate}>{busy ? '전송 중...' : '인증 메일 보내기'}</button><button type="reset" disabled={busy} onClick={() => { protection.clear(); setError('') }}>입력 지우기</button></div>
+          {!social && <label>이메일 등록용 현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" required maxLength={72} disabled={busy} /></label>}
+          <div><button disabled={busy || !canMutate || (social && !googleVerified)}>{busy ? '전송 중...' : '인증 메일 보내기'}</button><button type="reset" disabled={busy} onClick={() => { protection.clear(); setError('') }}>입력 지우기</button></div>
         </form>
       </>}
     </>}

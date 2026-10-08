@@ -5,12 +5,14 @@ import api from '../api/client'
 import { notifySessionChanged } from '../store/auth'
 import { useSession } from '../store/sessionContext'
 import { errorMessage } from '../domain/tracker'
+import { GoogleLoginButton } from './GoogleAccount'
 
 export function AuthPage({ join = false }) {
   const navigate = useNavigate()
   const { member, status } = useSession()
   const [params] = useSearchParams()
   const [busy, setBusy] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState('')
   const pendingRequest = useRef(null)
   useEffect(() => () => pendingRequest.current?.abort(), [])
@@ -42,11 +44,14 @@ export function AuthPage({ join = false }) {
       <p className="muted">{join ? '나의 다음 커리어를 기록하세요.' : '오늘의 지원과 일정을 확인하세요.'}</p>
       {params.has('expired') && <p role="status" className="notice">로그인이 만료되었습니다. 다시 로그인해 주세요.</p>}
       {params.has('passwordChanged') && <p role="status" className="notice">비밀번호를 변경하고 모든 기기에서 로그아웃했습니다.</p>}
+      {params.has('googleError') && <p role="alert" className="error">Google 인증을 완료하지 못했습니다. 취소했거나 시간이 지났다면 다시 시도해 주세요.</p>}
+      {params.has('googleLinked') && <p role="status" className="notice">Google 계정을 연결했습니다. 다시 로그인해 주세요.</p>}
+      <GoogleLoginButton rememberMe={rememberMe} />
       <form onSubmit={submit}>
         <div><label>아이디<input name="username" required autoComplete="username" pattern={join ? '[a-z0-9]{4,20}' : undefined} title="영문 소문자와 숫자 4~20자" maxLength={20} aria-describedby={join ? 'username-rule' : undefined} /></label>{join && <p id="username-rule" className="field-hint">영문 소문자와 숫자만 사용, 4~20자</p>}</div>
         <div><label>비밀번호<input name="password" type="password" required autoComplete={join ? 'new-password' : 'current-password'} minLength={join ? 8 : undefined} maxLength={30} pattern={join ? '(?=.*[A-Za-z])(?=.*[0-9]).{8,30}' : undefined} title="영문과 숫자를 포함한 8~30자" aria-describedby={join ? 'password-rule' : undefined} /></label>{join && <p id="password-rule" className="field-hint">영문과 숫자를 모두 포함, 8~30자</p>}</div>
         {join && <div><label>닉네임<input name="nickname" required minLength={1} maxLength={10} autoComplete="nickname" aria-describedby="nickname-rule" /></label><p id="nickname-rule" className="field-hint">1~10자</p></div>}
-        <div><label className="check-label"><input name="rememberMe" type="checkbox" disabled={busy} aria-describedby="remember-me-hint" />로그인 상태 유지</label><p id="remember-me-hint" className="field-hint">선택하면 이 기기에서 최대 7일간 유지됩니다. 공용 기기에서는 선택하지 마세요.</p></div>
+        <div><label className="check-label"><input name="rememberMe" type="checkbox" disabled={busy} checked={rememberMe} onChange={event => setRememberMe(event.target.checked)} aria-describedby="remember-me-hint" />로그인 상태 유지</label><p id="remember-me-hint" className="field-hint">선택하면 이 기기에서 최대 7일간 유지됩니다. 공용 기기에서는 선택하지 마세요.</p></div>
         {error && <p role="alert" className="error">{error}</p>}
         <button className="primary" disabled={busy}>{busy ? '처리 중…' : join ? '가입하고 시작하기' : '로그인'}<ArrowRight size={18} /></button>
       </form>

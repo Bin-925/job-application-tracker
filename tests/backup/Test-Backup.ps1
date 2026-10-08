@@ -38,6 +38,7 @@ try {
         $query = "SELECT md5(coalesce(string_agg(row_to_json(t)::text,E'\n' ORDER BY id),'')) FROM $table t"
         $digests[$table] = Invoke-BackupDocker @('exec',$source,'psql','-U','jobtracker_admin','-d','jobtracker','-X','-qAt','-c',$query)
     }
+    $googleDigest = Invoke-BackupDocker @('exec',$source,'psql','-U','jobtracker_admin','-d','jobtracker','-X','-qAt','-c',"SELECT md5(coalesce(string_agg(row_to_json(t)::text,E'\n' ORDER BY member_id),'')) FROM google_identity t")
     $backup = & (Join-Path $root 'scripts/Backup-Postgres.ps1') -SourceContainer $source -OutputDirectory $output
     $receipt = Get-Content -LiteralPath "$backup.restore.json" -Raw | ConvertFrom-Json
     if ($receipt.checks.members -ne 1 -or $receipt.checks.applications -ne 1 -or $receipt.checks.schedules -ne 1 -or
@@ -52,6 +53,9 @@ try {
     if ($sourceResets -ne '1') { throw 'Backup changed original password reset tokens' }
     $sourceRegistrations = Invoke-BackupDocker @('exec',$source,'psql','-U','jobtracker_admin','-d','jobtracker','-X','-qAt','-c','SELECT count(*) FROM registration_token')
     if ($sourceRegistrations -ne '1') { throw 'Backup changed original registration tokens' }
+    if ($receipt.checks.googleIdentityDigest -ne $googleDigest) { throw 'Restored Google identity differs from source' }
+    $sourceProofs = Invoke-BackupDocker @('exec',$source,'psql','-U','jobtracker_admin','-d','jobtracker','-X','-qAt','-c','SELECT count(*) FROM google_reauthentication')
+    if ($sourceProofs -ne '1') { throw 'Backup changed original Google proof' }
     Write-Output 'PASS: Unicode/memo/date/version/ownership data digests, sequences and constraints, excluded sessions, unchanged source'
     $corrupt = Join-Path $output 'corrupt.dump'
     Copy-Item -LiteralPath $backup -Destination $corrupt

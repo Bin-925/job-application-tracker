@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Bin-925/job-application-tracker/actions/workflows/ci.yml/badge.svg?branch=dev)
 
-> **2026-10-04 현재 `dev` 기준입니다.** 핵심 기능·세션 인증·PWA·CI·Gemini 실제 리뷰 연결을 구현하고 검증했습니다. 운영 환경으로의 이번 버전 전환, Web Push, 원스토어 출시는 아직 완료하지 않았습니다.
+> **2026-10-08 개발 버전 기준입니다.** 핵심 기능·세션 인증·PWA·CI와 메일 가입·비밀번호 재설정, Google OIDC 코드와 모의 제공자 검증을 구현했습니다. Google 실제 클라이언트 연결, 운영 환경 전환, Web Push, 원스토어 출시는 아직 완료하지 않았습니다. Gemini 리뷰 연결은 유지하지만 최근 실행의 API 오류·시간 초과는 리뷰 완료로 보지 않습니다.
 >
 > 배포는 예산 결정 전 보류합니다. Railway 통합을 우선 고려하고 이후 EC2에서 AWS 운영을 직접 학습하려는 방향입니다. 환경 생성·결제·이전 일정은 아직 확정하지 않았습니다.
 
@@ -26,6 +26,7 @@
 | 복수 일정 | 지원별 여러 면접·마감 등록/수정/삭제, 예정·완료·취소, 이전 단일 날짜의 호환 표시와 변환 |
 | 월간 캘린더 | 이전/다음/오늘 이동, 날짜별 일정, 지원일·면접·마감 표시 선택. 처음에는 모두 표시 |
 | 인증 | JDBC 세션 + HttpOnly 쿠키, 로그인 유지 선택, 로그인 시 세션 ID 교체, CSRF 검사 |
+| Google 로그인 | 기본 비활성. OIDC 가입·로그인·연결·해제, Google 전용 계정 재확인·비밀번호 추가·탈퇴. 실제 클라이언트 연결은 대기 |
 | 복구 이메일 | 기존 회원의 현재 비밀번호 재확인, 30분 일회성 이메일 등록·변경 인증. SMTP 설정 전 기본 비활성 |
 | 계정 관리 | 닉네임·비밀번호 변경, 현재/전체 로그아웃, 현재 비밀번호 재확인 후 탈퇴 |
 | 화면 | 모바일 하단 탐색·데스크톱 좌측 탐색, 라이트/다크 모드 |
@@ -48,6 +49,7 @@
 | 서버 | Java 21, Spring Boot 3.5, Spring Security | 기존 기반 유지, 검증·인증·트랜잭션을 일관되게 처리 |
 | 데이터 | JPA/Hibernate, PostgreSQL, Flyway | 객체와 관계형 데이터 연결, 편집 버전 충돌 처리, SQL 변경 이력 관리 |
 | 세션 | Spring Session JDBC, BCrypt | 기존 DB로 로그인 상태·폐기를 관리. 비밀번호는 해시 저장 |
+| 소셜 인증 | Spring Security OAuth2 Client / OIDC | 코드 교환·ID Token 검증은 검증된 라이브러리에 위임. 인증 후에는 기존 JDBC 세션 사용 |
 | 요청 방어 | Bucket4j, Caffeine | IP·계정·전체 인증 예산 제한과 메모리 상한. 단일 서버 기준 |
 | 프론트 | React, JavaScript, React Router, Axios | 기존 기반 유지, URL 필터와 공통 쿠키·CSRF 통신 규칙 |
 | UI | CSS custom properties, Lucide, date-fns | 테마·아이콘 통일, 날짜 계산을 라이브러리에 위임 |
@@ -113,7 +115,7 @@ scripts/                                # 로컬 실행·검증
 
 ### 로그인 유지 정책
 
-로그인·회원가입 화면의 `로그인 상태 유지`는 기본 미선택입니다. 현재 회원가입은 가입 후 로그인까지 수행하며, 이때도 같은 선택을 적용합니다.
+로그인 화면의 `로그인 상태 유지`는 기본 미선택입니다. Google 로그인·가입에도 이 선택을 적용합니다. 이메일 선인증 가입은 완료 후 별도로 로그인하며, 기존 호환용 가입만 가입 후 로그인합니다.
 
 | 선택 | 브라우저 쿠키 | 서버 만료 조건 |
 |---|---|---|
@@ -135,7 +137,13 @@ scripts/                                # 로컬 실행·검증
 
 **일반 가입 이메일 인증도 구현되어 있으며 명시적으로 활성화합니다.** `APP_REGISTRATION_EMAIL_REQUIRED=true`와 메일 설정을 함께 사용하면 이메일 인증 링크에서 가입 정보를 입력해야 합니다. 기존 `/join` API를 직접 호출하는 우회는 차단합니다. 인증 전 회원·비밀번호를 저장하거나 아이디를 선점하지 않습니다. 기본값은 기존 배포 호환을 위해 `false`이며, `mail-local` 프로필에서는 활성화됩니다.
 
-기존 이메일 미등록 회원은 계속 이용할 수 있습니다. Google 로그인, 실제 외부 SMTP·HTTPS·모바일 메일 앱 복귀는 아직 미완료입니다.
+기존 이메일 미등록 회원은 계속 이용할 수 있습니다. 실제 외부 SMTP·HTTPS·모바일 메일 앱 복귀는 아직 미검증입니다.
+
+### Google OIDC
+
+`app.google.enabled`는 기본 false입니다. Google 클라이언트 설정 전에는 로그인 버튼이 숨겨집니다. 이메일이 아닌 검증된 `issuer + sub`로 식별하며, 동일 이메일로 기존 계정을 자동 연결하지 않습니다. 신규 Google 회원은 아이디·닉네임만 입력합니다. 연결·해제에는 기존 비밀번호를 확인하며 마지막 로그인 수단은 삭제할 수 없습니다.
+
+Google 전용 회원은 같은 Google 계정 재확인 후 5분 내 한 번 비밀번호 추가·복구 이메일 요청·탈퇴를 할 수 있습니다. 재확인 비밀은 서버 세션에만, 해시는 DB에 저장하며 회원 잠금과 트랜잭션으로 동시 재사용을 막습니다. Google 계정 선택이 비밀번호/MFA 재입력을 강제한다는 뜻은 아닙니다. Google 이메일을 복구 주소로 자동 등록하지 않습니다. [설정·API·검증 범위](docs/GOOGLE_LOGIN.md).
 
 ## API
 
@@ -206,9 +214,9 @@ cd ..
 
 | 필수 CI | 검증 내용 |
 |---|---|
-| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 45개 |
-| Backend tests and build | H2/단위·통합 테스트 105개와 bootJar. GreenMail SMTP 포함 |
-| PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 16개 + 복구 이메일 8개 + 비밀번호 재설정 10개 + 이메일 선인증 가입 8개 + 지원·일정 9개 + 동시·중복 가입 2개, 실제 백업/격리 복원 스크립트 검증 |
+| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 51개 |
+| Backend tests and build | H2/단위·통합 테스트 120개와 bootJar. 모의 OIDC HTTP 제공자·GreenMail SMTP 포함 |
+| PostgreSQL migrations and sessions | Testcontainers 테스트 72개: 이전·복원, 세션, 메일 인증·비밀번호 복구, Google 인증 12개, 지원·일정·동시 가입. 실제 백업/격리 복원 스크립트 검증 |
 | Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |
 | Windows backup permissions | 백업 파일·폴더의 상속 차단, 현재 사용자/SYSTEM 접근 제한, 소유자 보존, 반복 적용 검증 |
 

@@ -29,6 +29,7 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok'
 	// Password hashing and JDBC-backed sessions
 	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
 	implementation 'org.springframework.session:spring-session-jdbc'
 	implementation 'com.bucket4j:bucket4j_jdk17-core:8.18.0'
 	implementation 'com.github.ben-manes.caffeine:caffeine'

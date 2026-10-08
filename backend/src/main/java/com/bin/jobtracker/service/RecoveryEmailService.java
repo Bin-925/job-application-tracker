@@ -47,9 +47,22 @@ public class RecoveryEmailService {
         mail.requireAvailable();
         limiter.checkPasswordAction(id);
         var member = members.findForUpdate(id).orElseThrow();
-        if (member.getAuthVersion() != authVersion || !passwords.matches(password, member.getPassword())) {
+        if (member.getAuthVersion() != authVersion || member.getPassword() == null || !passwords.matches(password, member.getPassword())) {
             throw new ForbiddenException("현재 비밀번호를 확인해 주세요.");
         }
+        issue(member, email);
+    }
+
+    @Transactional
+    public void requestAfterReauthentication(Long id, long authVersion, String email) {
+        mail.requireAvailable();
+        var member = members.findForUpdate(id).orElseThrow();
+        if (member.getAuthVersion() != authVersion) throw new ForbiddenException("계정을 다시 확인해 주세요.");
+        issue(member, email);
+    }
+
+    private void issue(com.bin.jobtracker.entity.Member member, String email) {
+        Long id = member.getId();
         String normalized = normalizeEmail(email);
         if (normalized.equals(member.getRecoveryEmail())) throw new IllegalArgumentException("이미 인증된 이메일입니다.");
         Instant now = clock.instant().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
