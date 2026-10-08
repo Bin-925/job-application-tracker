@@ -19,7 +19,7 @@ public class MemberService {
     @Transactional
     public Member join(String username, String password, String nickname) {
         if (memberRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("이미 사용 중인 username입니다: " + username);
+            throw new com.bin.jobtracker.exception.DuplicateUsernameException();
         }
         Member member = new Member(username, passwordEncoder.encode(password), nickname);
         return memberRepository.save(member);

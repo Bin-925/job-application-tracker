@@ -39,7 +39,16 @@ public class MemberController {
 
     @PostMapping("/join")
     public ResponseEntity<String> join(@RequestBody @Valid JoinRequest req) {
-        memberService.join(req.username(), req.password(), req.nickname());
+        try {
+            memberService.join(req.username(), req.password(), req.nickname());
+        } catch (org.springframework.dao.DataIntegrityViolationException error) {
+            // The service transaction has rolled back, so this lookup uses a healthy transaction.
+            if (error.getMostSpecificCause() instanceof java.sql.SQLException sql
+                    && "23505".equals(sql.getSQLState()) && memberService.existsByUsername(req.username())) {
+                throw new com.bin.jobtracker.exception.DuplicateUsernameException();
+            }
+            throw error;
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body("회원가입 완료");
     }
 

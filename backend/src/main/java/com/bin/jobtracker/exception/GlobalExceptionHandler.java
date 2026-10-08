@@ -8,6 +8,11 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(DuplicateUsernameException.class)
+    public ResponseEntity<?> handleDuplicateUsername(DuplicateUsernameException error) {
+        return build(HttpStatus.CONFLICT, error.getMessage());
+    }
+
     @ExceptionHandler(MailUnavailableException.class)
     public ResponseEntity<?> handleMail(MailUnavailableException error) {
         return build(HttpStatus.SERVICE_UNAVAILABLE, error.getMessage());
