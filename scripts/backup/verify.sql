@@ -22,6 +22,10 @@ BEGIN
         EXECUTE 'SELECT count(*) FROM password_reset_token' INTO max_id;
         IF max_id <> 0 THEN RAISE EXCEPTION 'Backup contains password reset tokens'; END IF;
     END IF;
+    IF to_regclass('public.registration_token') IS NOT NULL THEN
+        EXECUTE 'SELECT count(*) FROM registration_token' INTO max_id;
+        IF max_id <> 0 THEN RAISE EXCEPTION 'Backup contains registration tokens'; END IF;
+    END IF;
     IF EXISTS (SELECT 1 FROM pg_constraint WHERE connamespace = 'public'::regnamespace AND NOT convalidated) THEN
         RAISE EXCEPTION 'Restored constraint not validated';
     END IF;

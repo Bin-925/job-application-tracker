@@ -61,6 +61,12 @@ public class RecoveryMailSender {
                 + "\n요청하지 않았다면 이 메일을 무시하세요. 비밀번호는 변경되지 않습니다.");
     }
 
+    public void registration(String email, String token) {
+        send(email, "취준노트 회원가입 이메일 인증", "본인이 요청한 경우에만 아래 링크에서 가입 정보를 입력해 주세요.\n"
+                + "링크는 30분 동안 한 번 사용할 수 있습니다.\n" + baseUrl + "/verify-registration#token=" + token
+                + "\n요청하지 않았다면 이 메일을 무시하세요. 아직 계정은 생성되지 않았습니다.");
+    }
+
     public void passwordChanged(String email) {
         send(email, "취준노트 비밀번호 변경 안내", "비밀번호가 재설정되어 모든 기기의 로그인이 해제되었습니다.\n"
                 + "본인이 변경하지 않았다면 비밀번호 재설정을 다시 진행해 주세요.\n" + baseUrl + "/forgot-password");

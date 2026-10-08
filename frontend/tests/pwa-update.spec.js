@@ -24,6 +24,7 @@ test.beforeEach(async () => {
     if (pathname.startsWith('/api/')) {
       response.setHeader('Content-Type', 'application/json')
       if (pathname.endsWith('/csrf')) return response.end(JSON.stringify({ headerName: 'X-CSRF-TOKEN', token: 'fixture' }))
+      if (pathname.endsWith('/registration/options')) return response.end(JSON.stringify({ required: false }))
       if (pathname.endsWith('/me')) {
         if (memberStatus === 0) return response.destroy()
         response.statusCode = memberStatus
@@ -61,6 +62,82 @@ test.afterEach(async () => {
   releaseSave?.()
   server.closeAllConnections()
   await new Promise(resolve => server.close(resolve))
+})
+
+test('email-first registration requests only email and does not call legacy signup or login', async ({ page }) => {
+  memberStatus = 401
+  await page.route('**/api/v1/members/registration/options', route => route.fulfill({ json: { required: true } }))
+  let requested = 0, legacy = 0
+  await page.route('**/api/v1/members/registration/requests', route => {
+    requested++
+    expect(route.request().postDataJSON()).toEqual({ email: 'signup@example.test' })
+    return route.fulfill({ status: 202 })
+  })
+  await page.route('**/api/v1/members/join', route => { legacy++; return route.fulfill({ status: 201 }) })
+  await page.route('**/api/v1/members/login', route => { legacy++; return route.fulfill({ json: member }) })
+  await page.goto(origin + '/join')
+  await expect(page.getByLabel('아이디', { exact: true })).toHaveCount(0)
+  await page.getByLabel('이메일', { exact: true }).fill('signup@example.test')
+  await page.getByRole('button', { name: '인증 메일 요청' }).click()
+  await expect(page.getByRole('status')).toContainText('인증 메일을 요청')
+  expect(requested).toBe(1); expect(legacy).toBe(0)
+})
+
+for (const width of [360, 1440]) {
+  test(`registration confirmation preserves duplicate input and checks password confirmation at ${width}px`, async ({ page }) => {
+    memberStatus = 401
+    const token = 'r'.repeat(43)
+    let sent = 0
+    await page.route('**/api/v1/members/registration/confirm', route => {
+      sent++
+      expect(route.request().postDataJSON()).toEqual({ token, member: { username: sent === 1 ? 'existing' : 'newuser', password: 'Signup123', nickname: '지원자' } })
+      return route.fulfill(sent === 1 ? { status: 409, json: { message: '이미 사용 중인 아이디입니다.' } } : { status: 201 })
+    })
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto(origin + '/verify-registration#token=' + token)
+    await expect(page).toHaveURL(origin + '/verify-registration')
+    expect(sent).toBe(0)
+    await page.getByLabel('아이디', { exact: true }).fill('existing')
+    await page.getByLabel('닉네임', { exact: true }).fill('지원자')
+    await page.getByLabel('비밀번호', { exact: true }).fill('Signup123')
+    await page.getByLabel('비밀번호 확인', { exact: true }).fill('Mismatch123')
+    await page.getByRole('button', { name: '가입 완료', exact: true }).click()
+    await expect(page.getByRole('alert')).toContainText('일치하지')
+    expect(sent).toBe(0)
+    await page.getByLabel('비밀번호 확인', { exact: true }).fill('Signup123')
+    await page.getByRole('button', { name: '가입 완료', exact: true }).click()
+    await expect(page.getByRole('alert')).toContainText('이미 사용 중')
+    await expect(page.getByLabel('비밀번호', { exact: true })).toHaveValue('Signup123')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.getByLabel('아이디', { exact: true }).fill('newuser')
+    await page.getByRole('button', { name: '가입 완료', exact: true }).click()
+    await expect(page.getByRole('status')).toContainText('가입을 완료')
+    await expect(page).toHaveURL(origin + '/verify-registration')
+    await expect(page.getByLabel('비밀번호', { exact: true })).toHaveCount(0)
+  })
+}
+
+test('registration settings failure offers retry and missing link cannot submit', async ({ page }) => {
+  memberStatus = 401
+  let attempts = 0
+  await page.route('**/api/v1/members/registration/options', route => {
+    attempts++
+    return route.fulfill(attempts === 1 ? { status: 503, json: { message: '서버 연결을 확인해 주세요.' } } : { json: { required: true } })
+  })
+  await page.goto(origin + '/join')
+  await expect(page.getByRole('alert')).toContainText('서버 연결')
+  await page.getByRole('button', { name: '다시 확인' }).click()
+  await expect(page.getByLabel('이메일', { exact: true })).toBeVisible()
+  await page.goto(origin + '/verify-registration')
+  await expect(page.getByRole('alert')).toContainText('유효한 가입 링크가 없습니다')
+  await expect(page.getByRole('button', { name: '가입 완료', exact: true })).toHaveCount(0)
+})
+
+test('registration does not confuse a currently signed-in account with a new one', async ({ page }) => {
+  await page.goto(origin + '/verify-registration#token=' + 'r'.repeat(43))
+  await expect(page.getByRole('heading', { name: '현재 로그인 중입니다' })).toBeVisible()
+  await expect(page.getByRole('button', { name: '가입 완료', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: '내 정보로 이동' })).toHaveAttribute('href', '/mypage')
 })
 
 test('password reset request reports accepted without exposing an account and retains rejected input', async ({ page }) => {

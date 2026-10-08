@@ -133,7 +133,9 @@ scripts/                                # 로컬 실행·검증
 
 로그인 화면의 **비밀번호 찾기**에서 아이디와 미리 인증한 복구 이메일로 재설정 메일을 요청할 수 있습니다. 링크는 15분간 한 번만 사용할 수 있으며, 변경 후 모든 기기의 기존 세션을 거절합니다. 자동 로그인은 하지 않습니다. 이메일 미등록 회원의 비밀번호를 복구하거나 계정을 임의로 합치지는 않습니다.
 
-**일반 가입 이메일 인증과 Google 로그인은 아직 미구현입니다.** 기존 이메일 미등록 회원은 계속 이용할 수 있습니다. 실제 외부 SMTP·HTTPS·모바일 메일 앱 복귀는 별도 검증이 필요합니다.
+**일반 가입 이메일 인증도 구현되어 있으며 명시적으로 활성화합니다.** `APP_REGISTRATION_EMAIL_REQUIRED=true`와 메일 설정을 함께 사용하면 이메일 인증 링크에서 가입 정보를 입력해야 합니다. 기존 `/join` API를 직접 호출하는 우회는 차단합니다. 인증 전 회원·비밀번호를 저장하거나 아이디를 선점하지 않습니다. 기본값은 기존 배포 호환을 위해 `false`이며, `mail-local` 프로필에서는 활성화됩니다.
+
+기존 이메일 미등록 회원은 계속 이용할 수 있습니다. Google 로그인, 실제 외부 SMTP·HTTPS·모바일 메일 앱 복귀는 아직 미완료입니다.
 
 ## API
 
@@ -155,6 +157,9 @@ scripts/                                # 로컬 실행·검증
 | GET | `/members/me/recovery-email` | 기능 사용 가능 여부와 인증/대기 주소 |
 | POST | `/members/me/recovery-email/requests` | 현재 비밀번호 재확인 후 이메일 인증 메일 전송 |
 | GET | `/members/password-reset/options` | 복구 메일 기능 활성화 여부 |
+| GET | `/members/registration/options` | 신규 가입 이메일 인증 필수 여부 |
+| POST | `/members/registration/requests` | 가입용 이메일 인증 메일 접수(202) |
+| POST | `/members/registration/confirm` | 이메일 증명 토큰과 가입 정보로 회원 생성(201), 자동 로그인 없음 |
 | POST | `/members/password-reset/requests` | 아이디·복구 이메일 요청 접수(202), 계정 일치 여부 미노출 |
 | POST | `/members/password-reset/confirm` | 일회용 토큰으로 비밀번호 재설정, 기존 세션 폐기 |
 | POST | `/members/recovery-email/confirm` | 일회성 링크 인증. 익명 가능, CSRF 필수 |
@@ -201,9 +206,9 @@ cd ..
 
 | 필수 CI | 검증 내용 |
 |---|---|
-| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 40개 |
-| Backend tests and build | H2/단위·통합 테스트 94개와 bootJar. GreenMail SMTP 포함 |
-| PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 16개 + 복구 이메일 8개 + 비밀번호 재설정 10개 + 지원·일정 9개 + 동시·중복 가입 2개, 실제 백업/격리 복원 스크립트 검증 |
+| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 45개 |
+| Backend tests and build | H2/단위·통합 테스트 105개와 bootJar. GreenMail SMTP 포함 |
+| PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 16개 + 복구 이메일 8개 + 비밀번호 재설정 10개 + 이메일 선인증 가입 8개 + 지원·일정 9개 + 동시·중복 가입 2개, 실제 백업/격리 복원 스크립트 검증 |
 | Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |
 | Windows backup permissions | 백업 파일·폴더의 상속 차단, 현재 사용자/SYSTEM 접근 제한, 소유자 보존, 반복 적용 검증 |
 

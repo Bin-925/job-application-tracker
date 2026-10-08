@@ -4,6 +4,8 @@ spring:
     host: 127.0.0.1
     port: 1025
 app:
+  registration-email:
+    required: true
   recovery-email:
     enabled: true
     from: noreply@jobtracker.test

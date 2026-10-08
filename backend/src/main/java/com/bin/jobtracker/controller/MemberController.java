@@ -31,6 +31,7 @@ public class MemberController {
     private final SessionService sessions;
     private final com.bin.jobtracker.security.AuthRateLimiter limiter;
     private final com.bin.jobtracker.security.SessionPolicy sessionPolicy;
+    private final com.bin.jobtracker.config.RegistrationPolicy registrationPolicy;
 
     @GetMapping("/csrf")
     public java.util.Map<String, String> csrf(CsrfToken token) {
@@ -39,6 +40,7 @@ public class MemberController {
 
     @PostMapping("/join")
     public ResponseEntity<String> join(@RequestBody @Valid JoinRequest req) {
+        if (registrationPolicy.required()) throw new IllegalArgumentException("이메일 인증 후 회원가입을 완료해 주세요.");
         try {
             memberService.join(req.username(), req.password(), req.nickname());
         } catch (org.springframework.dao.DataIntegrityViolationException error) {

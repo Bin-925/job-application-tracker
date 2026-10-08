@@ -17,6 +17,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class RegistrationControllerTest {
     @Mock MemberService members;
+    @Mock com.bin.jobtracker.config.RegistrationPolicy registrationPolicy;
     @InjectMocks MemberController controller;
     private final JoinRequest request = new JoinRequest("audituser", "Audit1234!", "Audit");
 
