@@ -131,7 +131,9 @@ scripts/                                # 로컬 실행·검증
 
 내 정보에서 현재 비밀번호를 확인한 후 복구 이메일을 등록·변경할 수 있습니다. 인증 전에는 기존 주소를 유지하며, 링크를 여는 것만으로는 인증하지 않습니다. 토큰은 DB에 해시로만 저장하고 재발송·비밀번호 변경·전체 로그아웃 후 이전 링크를 거절합니다. [API·보안·SMTP 설정·한계](docs/RECOVERY_EMAIL.md).
 
-**일반 가입 이메일 인증, 비밀번호 재설정, Google 로그인은 아직 미구현입니다.** 이번 단계의 등록 주소는 후속 계정 복구를 준비하는 용도이며, 현재 분실 비밀번호를 재설정할 수 있다는 의미가 아닙니다. 기존 이메일 미등록 회원은 계속 이용할 수 있습니다.
+로그인 화면의 **비밀번호 찾기**에서 아이디와 미리 인증한 복구 이메일로 재설정 메일을 요청할 수 있습니다. 링크는 15분간 한 번만 사용할 수 있으며, 변경 후 모든 기기의 기존 세션을 거절합니다. 자동 로그인은 하지 않습니다. 이메일 미등록 회원의 비밀번호를 복구하거나 계정을 임의로 합치지는 않습니다.
+
+**일반 가입 이메일 인증과 Google 로그인은 아직 미구현입니다.** 기존 이메일 미등록 회원은 계속 이용할 수 있습니다. 실제 외부 SMTP·HTTPS·모바일 메일 앱 복귀는 별도 검증이 필요합니다.
 
 ## API
 
@@ -152,6 +154,9 @@ scripts/                                # 로컬 실행·검증
 | DELETE | `/members/me` | 현재 비밀번호 재확인 후 탈퇴 |
 | GET | `/members/me/recovery-email` | 기능 사용 가능 여부와 인증/대기 주소 |
 | POST | `/members/me/recovery-email/requests` | 현재 비밀번호 재확인 후 이메일 인증 메일 전송 |
+| GET | `/members/password-reset/options` | 복구 메일 기능 활성화 여부 |
+| POST | `/members/password-reset/requests` | 아이디·복구 이메일 요청 접수(202), 계정 일치 여부 미노출 |
+| POST | `/members/password-reset/confirm` | 일회용 토큰으로 비밀번호 재설정, 기존 세션 폐기 |
 | POST | `/members/recovery-email/confirm` | 일회성 링크 인증. 익명 가능, CSRF 필수 |
 
 지원·일정 경로는 모두 로그인과 서버 소유권 검사를 거칩니다.
@@ -196,9 +201,9 @@ cd ..
 
 | 필수 CI | 검증 내용 |
 |---|---|
-| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 37개 |
-| Backend tests and build | H2/단위·통합 테스트 81개와 bootJar. GreenMail SMTP 포함 |
-| PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 16개 + 복구 이메일 8개 + 지원·일정 9개 + 동시·중복 가입 2개, 실제 백업/격리 복원 스크립트 검증 |
+| Frontend and PWA | lint, Node 테스트 16개, 빌드·PWA 검사, Playwright 40개 |
+| Backend tests and build | H2/단위·통합 테스트 94개와 bootJar. GreenMail SMTP 포함 |
+| PostgreSQL migrations and sessions | Testcontainers 이전·복원 6개 + 세션 16개 + 복구 이메일 8개 + 비밀번호 재설정 10개 + 지원·일정 9개 + 동시·중복 가입 2개, 실제 백업/격리 복원 스크립트 검증 |
 | Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |
 | Windows backup permissions | 백업 파일·폴더의 상속 차단, 현재 사용자/SYSTEM 접근 제한, 소유자 보존, 반복 적용 검증 |
 

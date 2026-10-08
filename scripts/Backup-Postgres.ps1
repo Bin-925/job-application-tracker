@@ -29,7 +29,8 @@ try {
         '-U', 'jobtracker_admin', '-d', 'jobtracker', '--format=custom', '--no-owner', '--no-privileges',
         '--lock-wait-timeout=5s', '--exclude-table-data=public.spring_session',
         '--exclude-table-data=public.spring_session_attributes',
-        '--exclude-table-data=public.recovery_email_verification', '--file', $remote)
+        '--exclude-table-data=public.recovery_email_verification',
+        '--exclude-table-data=public.password_reset_token', '--file', $remote)
     $null = Invoke-BackupDocker @('cp', "${SourceContainer}:$remote", "$file.partial")
     Protect-BackupPath "$file.partial"
     Move-Item -LiteralPath "$file.partial" -Destination $file

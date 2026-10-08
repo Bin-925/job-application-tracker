@@ -30,6 +30,27 @@ class AuthRateLimiterTest {
         assertThatCode(() -> limiter.checkLogin("student")).doesNotThrowAnyException();
     }
 
+    @Test void resetCooldownAndRecipientBudgetApplyWithoutAccountLookup() {
+        var limiter = limiter(true);
+        limiter.checkPasswordReset("unknown", "recipient@example.test");
+        assertThatThrownBy(() -> limiter.checkPasswordReset("UNKNOWN", "other@example.test"))
+                .isInstanceOf(RateLimitException.class);
+        nanos.addAndGet(Duration.ofMinutes(1).toNanos());
+        limiter.checkPasswordReset("unknown", "recipient@example.test");
+        limiter.checkPasswordReset("other", "recipient@example.test");
+        assertThatThrownBy(() -> limiter.checkPasswordReset("third", "RECIPIENT@example.test"))
+                .isInstanceOf(RateLimitException.class);
+    }
+
+    @Test void resetEndpointsShareIpBudget() {
+        var limiter = limiter(true);
+        limiter.checkRequest("ip", "/api/v1/members/password-reset/options", "GET");
+        limiter.checkRequest("ip", "/api/v1/members/password-reset/requests", "POST");
+        limiter.checkRequest("ip", "/api/v1/members/password-reset/confirm", "POST");
+        assertThatThrownBy(() -> limiter.checkRequest("ip", "/api/v1/members/password-reset/confirm", "POST"))
+                .isInstanceOf(RateLimitException.class);
+    }
+
     @Test void ipBudgetIsSharedAcrossSensitiveEndpointsButNotOtherIps() {
         var limiter = limiter(true);
         limiter.checkRequest("127.0.0.1", "/api/v1/members/login", "POST");

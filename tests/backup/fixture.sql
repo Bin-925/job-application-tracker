@@ -13,3 +13,5 @@ INSERT INTO spring_session_attributes(session_primary_id,attribute_name,attribut
 VALUES ('00000000-0000-0000-0000-000000000001','fixture',decode('010203','hex'));
 INSERT INTO recovery_email_verification(member_id,email,token_hash,auth_version,expires_at,issued_at)
 VALUES (41,'fixture@example.test',repeat('a',64),7,now() + interval '30 minutes',now());
+INSERT INTO password_reset_token(member_id,email,token_hash,auth_version,expires_at,issued_at)
+VALUES (41,'fixture@example.test',repeat('b',64),7,now() + interval '15 minutes',now());

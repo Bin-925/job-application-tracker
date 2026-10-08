@@ -51,6 +51,7 @@ export function AuthPage({ join = false }) {
         <button className="primary" disabled={busy}>{busy ? '처리 중…' : join ? '가입하고 시작하기' : '로그인'}<ArrowRight size={18} /></button>
       </form>
       <p className="auth-switch">{join ? '이미 계정이 있나요?' : '처음 방문했나요?'} <Link to={join ? '/login' : '/join'}>{join ? '로그인' : '회원가입'}</Link></p>
+      {!join && <p className="auth-switch"><Link to="/forgot-password">비밀번호 찾기</Link></p>}
     </section>
     <footer>지원의 시작부터, 다음 커리어까지.</footer>
   </main>

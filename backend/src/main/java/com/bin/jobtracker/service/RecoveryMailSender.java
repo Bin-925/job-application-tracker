@@ -55,6 +55,17 @@ public class RecoveryMailSender {
                 + baseUrl + "/login");
     }
 
+    public void passwordReset(String email, String token) {
+        send(email, "취준노트 비밀번호 재설정", "본인이 요청한 경우에만 아래 링크에서 새 비밀번호를 설정해 주세요.\n"
+                + "링크는 15분 동안 한 번 사용할 수 있습니다.\n" + baseUrl + "/reset-password#token=" + token
+                + "\n요청하지 않았다면 이 메일을 무시하세요. 비밀번호는 변경되지 않습니다.");
+    }
+
+    public void passwordChanged(String email) {
+        send(email, "취준노트 비밀번호 변경 안내", "비밀번호가 재설정되어 모든 기기의 로그인이 해제되었습니다.\n"
+                + "본인이 변경하지 않았다면 비밀번호 재설정을 다시 진행해 주세요.\n" + baseUrl + "/forgot-password");
+    }
+
     private void send(String email, String subject, String body) {
         requireAvailable();
         var message = new SimpleMailMessage();
