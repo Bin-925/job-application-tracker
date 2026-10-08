@@ -38,7 +38,7 @@ class PostgresMigrationTest {
 
     @Test void emptyDatabaseMigratesAndRepeatedStartupHasNoPendingMigrations() {
         var flyway = config(schema()).load();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(6);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(7);
         assertThat(flyway.migrate().migrationsExecuted).isZero();
         assertThatCode(flyway::validate).doesNotThrowAnyException();
     }
@@ -47,7 +47,7 @@ class PostgresMigrationTest {
         String schema = schema();
         config(schema).target("1").load().migrate();
         seedLegacy(schema);
-        assertThat(config(schema).load().migrate().migrationsExecuted).isEqualTo(5);
+        assertThat(config(schema).load().migrate().migrationsExecuted).isEqualTo(6);
         try (var connection = connect(schema); var sql = connection.createStatement();
              var rows = sql.executeQuery("SELECT a.version,m.auth_version,a.memo,a.interview_date "
                      + "FROM application a JOIN member m ON m.id=a.member_id")) {
@@ -69,7 +69,7 @@ class PostgresMigrationTest {
         var flyway = config(schema).baselineVersion("1").load();
         assertThatThrownBy(flyway::migrate).isInstanceOf(FlywayException.class);
         flyway.baseline();
-        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(5);
+        assertThat(flyway.migrate().migrationsExecuted).isEqualTo(6);
         try (var connection = connect(schema); var sql = connection.createStatement();
              var rows = sql.executeQuery("SELECT COUNT(*) FROM application")) {
             rows.next();

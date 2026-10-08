@@ -5,6 +5,7 @@ DECLARE
     max_id bigint;
     next_id bigint;
     migrations jsonb := '[]'::jsonb;
+    google_identity_digest text;
 BEGIN
     FOREACH name IN ARRAY ARRAY['member','application','schedule_event','spring_session','spring_session_attributes'] LOOP
         IF to_regclass('public.' || name) IS NULL THEN
@@ -25,6 +26,13 @@ BEGIN
     IF to_regclass('public.registration_token') IS NOT NULL THEN
         EXECUTE 'SELECT count(*) FROM registration_token' INTO max_id;
         IF max_id <> 0 THEN RAISE EXCEPTION 'Backup contains registration tokens'; END IF;
+    END IF;
+    IF to_regclass('public.google_reauthentication') IS NOT NULL THEN
+        EXECUTE 'SELECT count(*) FROM google_reauthentication' INTO max_id;
+        IF max_id <> 0 THEN RAISE EXCEPTION 'Backup contains Google reauthentication proofs'; END IF;
+    END IF;
+    IF to_regclass('public.google_identity') IS NOT NULL THEN
+        EXECUTE 'SELECT md5(coalesce(string_agg(row_to_json(t)::text,E''\n'' ORDER BY member_id),'''')) FROM google_identity t' INTO google_identity_digest;
     END IF;
     IF EXISTS (SELECT 1 FROM pg_constraint WHERE connamespace = 'public'::regnamespace AND NOT convalidated) THEN
         RAISE EXCEPTION 'Restored constraint not validated';
@@ -51,7 +59,7 @@ BEGIN
         'schedules', (SELECT count(*) FROM schedule_event),
         'sessions', (SELECT count(*) FROM spring_session),
         'sessionAttributes', (SELECT count(*) FROM spring_session_attributes),
-        'sequencesValid', true, 'constraintsValid', true, 'migrations', migrations,
+        'sequencesValid', true, 'constraintsValid', true, 'migrations', migrations, 'googleIdentityDigest', google_identity_digest,
         'memberDigest', (SELECT md5(coalesce(string_agg(row_to_json(t)::text,E'\n' ORDER BY id),'')) FROM member t),
         'applicationDigest', (SELECT md5(coalesce(string_agg(row_to_json(t)::text,E'\n' ORDER BY id),'')) FROM application t),
         'scheduleDigest', (SELECT md5(coalesce(string_agg(row_to_json(t)::text,E'\n' ORDER BY id),'')) FROM schedule_event t)

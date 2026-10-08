@@ -6,6 +6,7 @@ import { errorMessage } from '../domain/tracker'
 import { AuthPage } from './AuthPage'
 import { useFormProtection } from './useFormProtection'
 import { useSession } from '../store/sessionContext'
+import { GoogleLoginButton } from './GoogleAccount'
 
 export function RegistrationPage() {
   const [required, setRequired] = useState(null)
@@ -68,6 +69,7 @@ export function Registration({ confirm = false }) {
   </section></main>
   return <main className="auth-page"><Link className="brand" to="/login"><NotebookPen size={26} />취준노트</Link>
     <section className="auth-form"><h1>{confirm ? '회원가입 완료하기' : '회원가입'}</h1>
+      {!confirm && <GoogleLoginButton />}
       {done ? <p role="status">{confirm ? '가입을 완료했습니다. 이제 로그인해 주세요.' : '인증 메일을 요청했습니다. 메일의 링크에서 가입 정보를 입력해 주세요. 메일이 오지 않으면 스팸함을 확인하거나 잠시 후 다시 요청해 주세요.'}</p>
         : confirm && !valid ? <p role="alert">유효한 가입 링크가 없습니다. 인증 메일을 다시 요청해 주세요.</p>
           : <form onSubmit={submit} onChange={() => setDirty(true)}>

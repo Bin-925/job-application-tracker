@@ -10,6 +10,7 @@
 .calendar-day:nth-child(7n){color:var(--blue)}
 .day-dots i{width:6px;height:6px}
 .inline-form>div,.settings-section form>div{display:flex;flex-wrap:wrap;gap:8px}
+.google-login{margin:20px 0}.google-login>button{width:100%}.google-login .error{margin-top:8px}
 .inline-form{align-items:start}.inline-form>div{flex-wrap:nowrap}
 .pwa-banner{flex-wrap:wrap}.pwa-banner>span{flex:1 1 220px;overflow-wrap:anywhere}.pwa-banner button:disabled{cursor:not-allowed}
 .notice>button{flex-shrink:0;white-space:nowrap}.notice>p{min-width:0;overflow-wrap:anywhere}

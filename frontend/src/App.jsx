@@ -5,6 +5,7 @@ import { AuthPage } from './workspace/AuthPage'
 import { VerifyRecoveryEmail } from './workspace/RecoveryEmail'
 import { PasswordReset } from './workspace/PasswordReset'
 import { Registration, RegistrationPage } from './workspace/Registration'
+import { CompleteGoogleSignup } from './workspace/GoogleAccount'
 import { Today, Applications, Calendar, Detail, Settings, ApplicationAction } from './workspace/Pages'
 import { SessionProvider } from './store/SessionProvider'
 import { useSession } from './store/sessionContext'
@@ -28,6 +29,7 @@ export default function App() {
     <Route path="/login" element={<AuthPage key="login" />} />
     <Route path="/join" element={<RegistrationPage />} />
     <Route path="/verify-registration" element={<Registration confirm />} />
+    <Route path="/complete-google-signup" element={<CompleteGoogleSignup />} />
     <Route path="/verify-email" element={<VerifyRecoveryEmail />} />
     <Route path="/forgot-password" element={<PasswordReset key="request" />} />
     <Route path="/reset-password" element={<PasswordReset key="confirm" confirm />} />

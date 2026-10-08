@@ -16,6 +16,8 @@ public class MemberService {
     private final com.bin.jobtracker.repository.ApplicationRepository applicationRepository;
     private final com.bin.jobtracker.repository.RecoveryEmailRepository recoveryEmails;
     private final com.bin.jobtracker.repository.PasswordResetRepository passwordResets;
+    private final com.bin.jobtracker.repository.GoogleIdentityRepository googleIdentities;
+    private final com.bin.jobtracker.repository.GoogleReauthenticationRepository googleProofs;
 
     @Transactional
     public Member join(String username, String password, String nickname) {
@@ -29,10 +31,10 @@ public class MemberService {
     public Member login(String username, String password) {
         Member member = memberRepository.findByUsername(username)
                 .orElse(null);
-        String hash = member == null
+        String hash = member == null || member.getPassword() == null
                 ? "$2a$10$dXJ3SW6G7P50lGmMkkmwe.20YHtjWKe.WjnjDJjRlmqlVIVe6kj6a"
                 : member.getPassword();
-        if (!passwordEncoder.matches(password, hash) || member == null) {
+        if (!passwordEncoder.matches(password, hash) || member == null || member.getPassword() == null) {
             throw new org.springframework.security.authentication.BadCredentialsException("아이디 또는 비밀번호를 확인해 주세요.");
         }
         return member;
@@ -57,13 +59,27 @@ public class MemberService {
     @Transactional
     public void deleteMember(Long memberId, String currentPassword) {
         Member member = memberRepository.findForUpdate(memberId).orElseThrow();
-        if (!passwordEncoder.matches(currentPassword, member.getPassword())) {
+        if (member.getPassword() == null || !passwordEncoder.matches(currentPassword, member.getPassword())) {
             throw new IllegalArgumentException("현재 비밀번호가 올바르지 않습니다.");
         }
+        deleteData(member);
+    }
+
+    @Transactional
+    public void deleteAfterReauthentication(Long memberId, long authVersion) {
+        Member member = memberRepository.findForUpdate(memberId).orElseThrow();
+        if (member.getAuthVersion() != authVersion) throw new com.bin.jobtracker.exception.ForbiddenException("계정을 다시 확인해 주세요.");
+        deleteData(member);
+    }
+
+    private void deleteData(Member member) {
+        Long memberId = member.getId();
         applicationRepository.deleteAll(applicationRepository.findByMemberId(memberId));
         applicationRepository.flush();
         recoveryEmails.deleteById(memberId);
         passwordResets.deleteById(memberId);
+        googleIdentities.deleteById(memberId);
+        googleProofs.deleteById(memberId);
         memberRepository.delete(member);
     }
 
@@ -78,7 +94,7 @@ public class MemberService {
     public void changePassword(Long memberId, String currentPassword, String newPassword) {
         Member member = memberRepository.findForUpdate(memberId).orElseThrow();
         // 현재 비밀번호 확인
-        if (!passwordEncoder.matches(currentPassword, member.getPassword())) {
+        if (member.getPassword() == null || !passwordEncoder.matches(currentPassword, member.getPassword())) {
             throw new IllegalArgumentException("현재 비밀번호가 올바르지 않습니다.");
         }
         // 새 비밀번호가 기존과 같으면 막기

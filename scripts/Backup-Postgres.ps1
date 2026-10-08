@@ -31,7 +31,8 @@ try {
         '--exclude-table-data=public.spring_session_attributes',
         '--exclude-table-data=public.recovery_email_verification',
         '--exclude-table-data=public.password_reset_token',
-        '--exclude-table-data=public.registration_token', '--file', $remote)
+        '--exclude-table-data=public.registration_token',
+        '--exclude-table-data=public.google_reauthentication', '--file', $remote)
     $null = Invoke-BackupDocker @('cp', "${SourceContainer}:$remote", "$file.partial")
     Protect-BackupPath "$file.partial"
     Move-Item -LiteralPath "$file.partial" -Destination $file

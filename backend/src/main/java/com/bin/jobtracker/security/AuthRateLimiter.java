@@ -36,9 +36,10 @@ public class AuthRateLimiter {
 
     public void checkRequest(String ip, String path, String method) {
         if (!properties.enabled() || method.equals("OPTIONS")) return;
-        if (!path.startsWith("/api/v1/members/")) return;
+        if (!path.startsWith("/api/v1/members/") && !path.startsWith("/api/v1/oauth/")) return;
         boolean csrf = path.equals("/api/v1/members/csrf");
-        boolean protectedRequest = csrf || path.equals("/api/v1/members/check-username")
+        boolean protectedRequest = csrf || path.startsWith("/api/v1/oauth/") || path.startsWith("/api/v1/members/me/google")
+                || path.equals("/api/v1/members/check-username")
                 || path.equals("/api/v1/members/login") || path.equals("/api/v1/members/join")
                 || path.equals("/api/v1/members/me/password")
                 || path.equals("/api/v1/members/me/recovery-email/requests")

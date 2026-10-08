@@ -51,6 +51,9 @@ class RecoveryEmailIntegrationTest {
     @Autowired RecoveryEmailService service;
     @Autowired RecoveryEmailRepository tokens;
     @Autowired JdbcTemplate jdbc;
+    @Autowired GoogleAccountService google;
+    @Autowired GoogleSensitiveActions sensitive;
+    @Autowired com.bin.jobtracker.repository.GoogleReauthenticationRepository googleProofs;
     @MockitoBean Clock clock;
     @MockitoSpyBean RecoveryMailSender mail;
     final AtomicReference<Instant> now = new AtomicReference<>();
@@ -109,6 +112,24 @@ class RecoveryEmailIntegrationTest {
         assertThat(updated.getAuthVersion()).isEqualTo(1);
         assertThat(tokens.findById(member.getId())).isEmpty();
         assertThatThrownBy(() -> service.confirm(token)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test void googleOnlyMemberNeedsOneTimeProofAndSeparateEmailConfirmation() throws Exception {
+        String subject = UUID.randomUUID().toString();
+        var member = google.register("https://accounts.google.com", subject,
+                "social" + UUID.randomUUID().toString().replace("-", "").substring(0, 10), "Google");
+        var principal = new com.bin.jobtracker.security.SessionPrincipal(member.getId(), member.getAuthVersion());
+        String proof = google.reauthenticate(principal, "https://accounts.google.com", subject);
+        String email = email();
+        sensitive.recoveryEmail(principal, proof, email);
+        assertThat(googleProofs.findById(member.getId())).isEmpty();
+        assertThat(memberRepository.findById(member.getId()).orElseThrow().getRecoveryEmail()).isNull();
+        assertThatThrownBy(() -> sensitive.recoveryEmail(principal, proof, email())).isInstanceOf(com.bin.jobtracker.exception.ForbiddenException.class);
+        service.confirm(token(email));
+        var updated = memberRepository.findById(member.getId()).orElseThrow();
+        assertThat(updated.getPassword()).isNull();
+        assertThat(updated.getRecoveryEmail()).isEqualTo(email);
+        assertThat(updated.getAuthVersion()).isEqualTo(1);
     }
     @Test void csrfAuthenticationAndPasswordAreRequired() throws Exception {
         var anonymous = new Browser();
