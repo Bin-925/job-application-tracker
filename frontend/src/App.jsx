@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { createBrowserRouter, createRoutesFromElements, RouterProvider, Navigate, Outlet, Route, useLocation } from 'react-router-dom'
+import { NavigationGuard } from './workspace/NavigationGuard'
 import { Workspace } from './workspace/Workspace'
 import { AuthPage } from './workspace/AuthPage'
 import { VerifyRecoveryEmail } from './workspace/RecoveryEmail'
@@ -24,8 +25,12 @@ function ScrollReset() {
   return null
 }
 
-export default function App() {
-  return <SessionProvider><BrowserRouter><ScrollReset /><Routes>
+function Shell() {
+  return <><ScrollReset /><NavigationGuard /><Outlet /></>
+}
+
+const router = createBrowserRouter(createRoutesFromElements(
+  <Route element={<Shell />}>
     <Route path="/login" element={<AuthPage key="login" />} />
     <Route path="/join" element={<RegistrationPage />} />
     <Route path="/verify-registration" element={<Registration confirm />} />
@@ -46,5 +51,9 @@ export default function App() {
       <Route path="notifications" element={<Navigate to="/calendar" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
-  </Routes></BrowserRouter></SessionProvider>
+  </Route>
+))
+
+export default function App() {
+  return <SessionProvider><RouterProvider router={router} /></SessionProvider>
 }

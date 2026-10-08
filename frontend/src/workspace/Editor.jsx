@@ -7,11 +7,12 @@ import { dateKey, errorMessage, safeLink, statuses } from '../domain/tracker'
 import { useFormProtection } from './useFormProtection'
 import { useSession } from '../store/sessionContext'
 import { SessionNotice } from './SessionNotice'
+import { useApplicationDraft } from './useApplicationDraft'
 
 export function Editor({ kind, app, event: schedule, status, date, count, apps, onClose, onSaved }) {
   const dialog = useRef(null)
   const navigate = useNavigate()
-  const { canMutate } = useSession()
+  const { canMutate, member } = useSession()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [selectedStatus, setSelectedStatus] = useState(status || app?.status || 'TO_APPLY')
@@ -19,8 +20,11 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [withInterview, setWithInterview] = useState(false)
   const protection = useFormProtection(busy, true, kind === 'status' && status !== app?.status)
+  const draft = useApplicationDraft(member?.id, kind === 'application' && !app)
+  const values = draft.restored || app || {}
   function close() {
-    if (!busy && (!protection.dirty || window.confirm('작성 중인 내용을 버리고 닫을까요?'))) onClose()
+    const message = draft.enabled ? '작성 화면을 닫을까요? 기기에 보관한 초안은 남습니다.' : '작성 중인 내용을 버리고 닫을까요?'
+    if (!busy && (!protection.dirty || window.confirm(message))) { protection.clear(); onClose() }
   }
   const title = { application: app ? '지원 수정' : '지원 추가', schedule: schedule ? '일정 수정' : '일정 추가', status: '상태 변경', delete: '지원 삭제', withdraw: '회원 탈퇴' }[kind]
   useEffect(() => { const element = dialog.current; element.showModal(); return () => element.close() }, [])
@@ -37,9 +41,11 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
         if (!payload.company || !payload.position) throw new Error('회사명과 직무를 입력해 주세요.')
         if (app) await api.put('/applications/' + app.id, payload)
         else await api.post('/applications', payload)
+        draft.complete(); protection.clear()
         await onSaved(app ? '지원 내역을 수정했습니다.' : '지원 내역을 추가했습니다.')
       } else if (kind === 'status') {
         const response = await api.patch('/applications/' + app.id + '/status', { status: selectedStatus, appliedDate: app.appliedDate || values.appliedDate || null, version: app.version })
+        protection.clear()
         await onSaved('상태를 변경했습니다.', withInterview && selectedStatus === 'INTERVIEW' ? { kind: 'schedule', app: response.data } : null)
       } else if (kind === 'schedule') {
         const id = app?.id || values.applicationId
@@ -49,9 +55,11 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
         if (schedule?.id?.toString().startsWith('legacy-')) await api.put(base + '/legacy-schedules/' + schedule.type, payload)
         else if (schedule) await api.put(base + '/schedules/' + schedule.id, payload)
         else await api.post(base + '/schedules', payload)
+        protection.clear()
         await onSaved('일정을 저장했습니다.')
       } else if (kind === 'delete') {
         await api.delete('/applications/' + app.id)
+        protection.clear()
         navigate('/applications', { replace: true })
         await onSaved('지원 내역을 삭제했습니다.')
       } else if (kind === 'withdraw') {
@@ -66,6 +74,7 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
     try {
       const suffix = schedule.id.toString().startsWith('legacy-') ? '/legacy-schedules/' + schedule.type : '/schedules/' + schedule.id
       await api.delete('/applications/' + app.id + suffix)
+      protection.clear()
       await onSaved('일정을 삭제했습니다.')
     } catch (failure) { setError(errorMessage(failure)) } finally { setBusy(false) }
   }
@@ -73,15 +82,22 @@ export function Editor({ kind, app, event: schedule, status, date, count, apps, 
   return <dialog ref={dialog} className="editor" aria-labelledby="editor-title" onCancel={e => { e.preventDefault(); close() }}>
     <div className="editor-heading"><h2 id="editor-title">{title}</h2><button className="icon" title="닫기" type="button" disabled={busy} onClick={close}><X size={22} /></button></div>
     <SessionNotice />
-    <form onSubmit={submit} onChange={protection.markDirty}>
+    <form key={draft.restored ? 'restored' : 'initial'} onSubmit={submit} onChange={event => { protection.markDirty(); draft.change(event.currentTarget) }}>
       <fieldset disabled={busy}>
         {kind === 'application' && <>
-          <label>회사명<input autoFocus name="company" defaultValue={app?.company} required maxLength={100} /></label>
-          <label>직무<input name="position" defaultValue={app?.position} required maxLength={100} /></label>
-          <label>지원 상태<select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)}>{Object.entries(statuses).map(([v, label]) => <option key={v} value={v}>{label}</option>)}</select></label>
-          <div className="form-columns"><label>지원일<input name="appliedDate" type="date" required={selectedStatus !== 'TO_APPLY'} max={dateKey()} defaultValue={app?.appliedDate || ''} /></label><label>서류 마감일<input name="deadline" type="date" defaultValue={app?.deadline || ''} /></label></div>
-          <label>공고 주소<input name="link" type="url" defaultValue={app?.link || ''} placeholder="https://" maxLength={255} /></label>
-          <label>메모<textarea name="memo" defaultValue={app?.memo || ''} rows={4} maxLength={1000} /></label>
+          {!app && <div className="draft-controls">
+            {draft.available && <><p>이 기기에 보관한 지원 초안이 있습니다.</p><button type="button" onClick={() => { setSelectedStatus(draft.available.values.status); draft.restore(); protection.markDirty() }}>초안 불러오기</button><button type="button" onClick={draft.remove}>보관한 초안 삭제</button></>}
+            <label className="check-label"><input type="checkbox" checked={draft.enabled} disabled={!!draft.available} onChange={event => { event.stopPropagation(); draft.toggle(event.target.checked, event.currentTarget.form) }} />이 기기에 새 지원 초안 보관</label>
+            <p className="field-hint">회사·직무·메모를 이 브라우저에 보관하며 7일 후 만료됩니다. 공용 기기에서는 선택하지 마세요. 로그아웃하면 삭제합니다.</p>
+            {draft.saved && <p role="status">기기에 초안을 보관했습니다.</p>}
+            {draft.error && <p className="error" role="alert">{draft.error}</p>}
+          </div>}
+          <label>회사명<input autoFocus name="company" defaultValue={values.company} required maxLength={100} /></label>
+          <label>직무<input name="position" defaultValue={values.position} required maxLength={100} /></label>
+          <label>지원 상태<select name="status" value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)}>{Object.entries(statuses).map(([v, label]) => <option key={v} value={v}>{label}</option>)}</select></label>
+          <div className="form-columns"><label>지원일<input name="appliedDate" type="date" required={selectedStatus !== 'TO_APPLY'} max={dateKey()} defaultValue={values.appliedDate || ''} /></label><label>서류 마감일<input name="deadline" type="date" defaultValue={values.deadline || ''} /></label></div>
+          <label>공고 주소<input name="link" type="url" defaultValue={values.link || ''} placeholder="https://" maxLength={255} /></label>
+          <label>메모<textarea name="memo" defaultValue={values.memo || ''} rows={4} maxLength={1000} /></label>
         </>}
         {kind === 'status' && <>
           <p className="muted">{app.company} · {app.position}</p>

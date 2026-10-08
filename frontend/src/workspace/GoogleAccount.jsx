@@ -11,10 +11,11 @@ import { RecoveryEmail } from './RecoveryEmail'
 const invalidRedirect = new Error('인증 경로를 확인할 수 없습니다.')
 const googleErrorMessage = failure => failure === invalidRedirect ? invalidRedirect.message : errorMessage(failure)
 
-async function startGoogle(body, signal) {
+async function startGoogle(body, signal, beforeNavigate = () => {}) {
   const { data } = await api.post('/oauth/google/start', body, { signal })
   if (signal.aborted) return
   if (data.authorizationUrl !== '/api/v1/oauth/authorize/google') throw invalidRedirect
+  beforeNavigate()
   window.location.assign(data.authorizationUrl)
 }
 
@@ -109,7 +110,7 @@ export function GoogleAccountMethods({ hasPassword = true }) {
     setBusy(true); setError('')
     try {
       if (action === 'LINK' || action === 'REAUTH') {
-        await startGoogle({ mode: action, currentPassword: fields.currentPassword }, request.signal)
+        await startGoogle({ mode: action, currentPassword: fields.currentPassword }, request.signal, protection.clear)
       } else {
         if (action === 'unlink') await api.delete('/members/me/google', { data: { currentPassword: fields.currentPassword }, signal: request.signal })
         else await api.post('/members/me/google/' + action, action === 'password' ? { newPassword: fields.newPassword } : {}, { signal: request.signal })

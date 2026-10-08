@@ -35,9 +35,8 @@ export function Registration({ confirm = false }) {
   const [busy, setBusy] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
-  const [dirty, setDirty] = useState(false)
   const pending = useRef(null)
-  useFormProtection(busy || dirty)
+  const protection = useFormProtection(busy)
   useEffect(() => {
     if (confirm) window.history.replaceState(window.history.state, '', window.location.pathname)
     return () => pending.current?.abort()
@@ -58,7 +57,7 @@ export function Registration({ confirm = false }) {
         confirm ? { token, member: { username: fields.username, password: fields.password, nickname: fields.nickname } } : { email: fields.email },
         { signal: request.signal })
       if (request.signal.aborted) return
-      form.reset(); setDirty(false); setDone(true); setToken('')
+      form.reset(); protection.clear(); setDone(true); setToken('')
     } catch (failure) { if (!request.signal.aborted) setError(errorMessage(failure)) }
     finally { if (!request.signal.aborted) setBusy(false) }
   }
@@ -72,7 +71,7 @@ export function Registration({ confirm = false }) {
       {!confirm && <GoogleLoginButton />}
       {done ? <p role="status">{confirm ? '가입을 완료했습니다. 이제 로그인해 주세요.' : '인증 메일을 요청했습니다. 메일의 링크에서 가입 정보를 입력해 주세요. 메일이 오지 않으면 스팸함을 확인하거나 잠시 후 다시 요청해 주세요.'}</p>
         : confirm && !valid ? <p role="alert">유효한 가입 링크가 없습니다. 인증 메일을 다시 요청해 주세요.</p>
-          : <form onSubmit={submit} onChange={() => setDirty(true)}>
+          : <form onSubmit={submit} onChange={protection.markDirty}>
             {confirm ? <>
               <div><label>아이디<input name="username" required pattern="[a-z0-9]{4,20}" minLength={4} maxLength={20} autoComplete="username" title="영문 소문자와 숫자 4~20자" /></label><p className="field-hint">영문 소문자와 숫자만 사용, 4~20자</p></div>
               <div><label>닉네임<input name="nickname" required minLength={1} maxLength={10} autoComplete="nickname" /></label><p className="field-hint">1~10자</p></div>
