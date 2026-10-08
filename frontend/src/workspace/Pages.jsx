@@ -139,7 +139,7 @@ export function Detail() {
 export function Settings() {
   const navigate = useNavigate()
   const { canMutate } = useSession()
-  const { notify, open, apps } = useOutletContext()
+  const { notify, open, applicationCount } = useOutletContext()
   const [member, setMember] = useState(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -180,6 +180,6 @@ export function Settings() {
       <button type="button" aria-label={passwordOpen ? '비밀번호 변경 접기' : '비밀번호 변경 열기'} aria-expanded={passwordOpen} aria-controls="password-change-form" disabled={busy} onClick={() => passwordOpen ? closePassword(true) : setPasswordOpen(true)}><KeyRound size={18} />비밀번호 변경<ChevronDown size={18} /></button>
       {passwordOpen && <form id="password-change-form" onChange={passwordProtection.markDirty} onSubmit={e => save(e, 'password')}><label>현재 비밀번호<input name="currentPassword" type="password" autoComplete="current-password" disabled={busy} required /></label><div><label>새 비밀번호<input name="newPassword" type="password" autoComplete="new-password" disabled={busy} required minLength={8} maxLength={30} pattern="(?=.*[A-Za-z])(?=.*[0-9]).{8,30}" aria-describedby="new-password-hint" /></label><p id="new-password-hint" className="field-hint">영문과 숫자를 모두 포함, 8~30자</p></div><div><button disabled={busy || !canMutate}>비밀번호 변경</button><button type="button" disabled={busy} onClick={() => closePassword()}>취소</button></div></form>}
     </section>
-    <section className="settings-section"><button disabled={busy} onClick={() => logout()}><LogOut size={18} />로그아웃</button><button disabled={busy} onClick={() => logout(true)}><LogOut size={18} />모든 기기에서 로그아웃</button><button disabled={busy} className="text-button danger" onClick={() => open({ kind: 'withdraw', count: apps.length })}>회원 탈퇴</button></section>
+    <section className="settings-section"><button disabled={busy} onClick={() => logout()}><LogOut size={18} />로그아웃</button><button disabled={busy} onClick={() => logout(true)}><LogOut size={18} />모든 기기에서 로그아웃</button><button disabled={busy} className="text-button danger" onClick={() => open({ kind: 'withdraw', count: applicationCount })}>회원 탈퇴</button></section>
   </>
 }
