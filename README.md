@@ -222,13 +222,13 @@ cd ..
 
 | 필수 CI | 검증 내용 |
 |---|---|
-| Frontend and PWA | lint, Node 테스트 20개, 빌드·PWA 검사, Playwright 61개 |
+| Frontend and PWA | lint, Node 테스트 20개, 빌드·PWA 검사, Playwright 62개 |
 | Backend tests and build | H2/단위·통합 테스트 121개와 bootJar. 모의 OIDC HTTP 제공자·GreenMail SMTP 포함 |
 | PostgreSQL migrations and sessions | Testcontainers 테스트 73개: 이전·복원, 세션·아바타 소유권, 메일 인증·비밀번호 복구, Google 인증 12개, 지원·일정·동시 가입. 실제 백업/격리 복원 스크립트 검증 |
 | Workflow tests | Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 2개 |
 | Windows backup permissions | 백업 파일·폴더의 상속 차단, 현재 사용자/SYSTEM 접근 제한, 소유자 보존, 반복 적용 검증 |
 
-숫자는 이 README 기준 개발 버전의 검증 범위입니다. 브라우저 테스트의 API fixture는 실제 백엔드 검증을 대신하지 않습니다.
+숫자는 이 README 기준 개발 버전의 검증 범위입니다. 브라우저 테스트의 API fixture는 실제 백엔드 검증을 대신하지 않습니다. 원래 익명인 가입 화면의 세션 확인 401은 입력 보호를 해제하지 않으며, 실제 회원 세션 상실은 입력·초안을 정리하는 회귀도 포함합니다.
 
 지원 내용 수정뿐 아니라 상태 변경도 조회 시점의 `version`을 보내야 합니다. 다른 화면에서 먼저 변경했다면 서버가 409로 거절하며, 최신 내용을 다시 조회한 뒤 재시도합니다. 버전이 없는 이전 클라이언트 요청은 400으로 거절합니다.
 

@@ -204,6 +204,20 @@ test('unsupported legacy avatar renders a safe fallback without loading a remote
   expect(currentMember.avatar).toBe('https://untrusted.invalid/a.png')
 })
 
+test('anonymous session probes preserve public registration draft navigation protection', async ({ page }) => {
+  memberStatus = 401
+  await page.route('**/api/v1/members/registration/options', route => route.fulfill({ json: { required: true } }))
+  await page.goto(origin + '/join')
+  await page.getByLabel('이메일', { exact: true }).fill('draft@example.test')
+  const probe = page.waitForResponse(response => response.url().endsWith('/members/me'))
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  expect((await probe).status()).toBe(401)
+  await page.getByRole('link', { name: '로그인으로 돌아가기' }).click()
+  await expect(page.getByRole('dialog', { name: '작성 화면을 나갈까요?' })).toBeVisible()
+  await page.getByRole('button', { name: '계속 작성' }).click()
+  await expect(page.getByLabel('이메일', { exact: true })).toHaveValue('draft@example.test')
+})
+
 test('email-first registration requests only email and does not call legacy signup or login', async ({ page }) => {
   memberStatus = 401
   await page.route('**/api/v1/members/registration/options', route => route.fulfill({ json: { required: true } }))
