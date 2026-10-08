@@ -159,6 +159,51 @@ test('draft deleted by another tab is not silently recreated', async ({ page, co
   expect(await page.evaluate(() => localStorage.getItem('jobtracker.application-draft.v1.1'))).toBeNull()
 })
 
+for (const width of [360, 1440]) {
+  test(`avatar supports keyboard preview cancel and failed save retry at ${width}px`, async ({ page }, testInfo) => {
+    currentMember = { ...member, avatar: 'blue' }
+    let attempts = 0
+    await page.route('**/api/v1/members/me/avatar', route => {
+      attempts++
+      expect(route.request().postDataJSON()).toEqual({ avatar: 'green' })
+      if (attempts === 1) return route.fulfill({ status: 503, json: { message: '잠시 후 다시 시도해 주세요.' } })
+      currentMember = { ...currentMember, avatar: 'green' }
+      return route.fulfill({ json: currentMember })
+    })
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto(origin + '/mypage')
+    await page.getByRole('button', { name: '아바타 변경' }).click()
+    await page.getByRole('radio', { name: '파랑', exact: true }).focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(page.getByRole('radio', { name: '초록', exact: true })).toBeChecked()
+    await expect(page.getByRole('img', { name: '초록 아바타 미리보기', exact: true })).toBeVisible()
+    await page.getByRole('heading', { name: '아바타', exact: true }).locator('..').getByRole('button', { name: '취소', exact: true }).click()
+    expect(attempts).toBe(0)
+    await expect(page.getByRole('img', { name: '파랑 아바타', exact: true })).toBeVisible()
+    await page.getByRole('button', { name: '아바타 변경' }).click()
+    await page.getByRole('radio', { name: '초록', exact: true }).check()
+    await page.getByRole('button', { name: '아바타 저장', exact: true }).click()
+    await expect(page.getByRole('alert')).toContainText('잠시 후')
+    await expect(page.getByRole('radio', { name: '초록', exact: true })).toBeChecked()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    await page.screenshot({ path: testInfo.outputPath(`avatar-${width}.png`), fullPage: true })
+    await page.getByRole('button', { name: '아바타 저장', exact: true }).click()
+    await expect(page.getByRole('img', { name: '초록 아바타', exact: true })).toBeVisible()
+    await page.reload()
+    await expect(page.getByRole('img', { name: '초록 아바타', exact: true })).toBeVisible()
+  })
+}
+
+test('unsupported legacy avatar renders a safe fallback without loading a remote image', async ({ page }) => {
+  currentMember = { ...member, avatar: 'https://untrusted.invalid/a.png' }
+  let external = 0
+  await page.route('https://untrusted.invalid/**', route => { external++; return route.abort() })
+  await page.goto(origin + '/mypage')
+  await expect(page.getByRole('img', { name: '파랑 아바타', exact: true })).toBeVisible()
+  expect(external).toBe(0)
+  expect(currentMember.avatar).toBe('https://untrusted.invalid/a.png')
+})
+
 test('email-first registration requests only email and does not call legacy signup or login', async ({ page }) => {
   memberStatus = 401
   await page.route('**/api/v1/members/registration/options', route => route.fulfill({ json: { required: true } }))

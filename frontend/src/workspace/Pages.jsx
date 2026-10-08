@@ -8,6 +8,7 @@ import api from '../api/client'
 import { notifySessionChanged } from '../store/auth'
 import { Editor } from './Editor'
 import { useFormProtection } from './useFormProtection'
+import { ProfileAvatar } from './ProfileAvatar'
 import { useSession } from '../store/sessionContext'
 import { RecoveryEmail } from './RecoveryEmail'
 import { GoogleAccountMethods } from './GoogleAccount'
@@ -173,7 +174,7 @@ export function Settings() {
   return <>
     <Heading title="내 정보" />
     {error && <p role="alert" className="error">{error}</p>}
-    <section className="profile-heading"><span className="avatar">{member?.nickname?.slice(0, 1) || '나'}</span><div><h2>{member?.nickname || '불러오는 중…'}</h2><p className="muted">@{member?.username || ''}</p></div></section>
+    {member ? <ProfileAvatar member={member} onSaved={updated => { setMember(updated); notify('아바타를 저장했습니다.') }} /> : <p role="status">내 정보를 불러오는 중...</p>}
     <section className="settings-section"><h2>화면 설정</h2><label className="setting-toggle">{dark ? <Moon size={19} /> : <Sun size={19} />}다크 모드<input type="checkbox" role="switch" checked={dark} onChange={e => { setDark(e.target.checked); document.documentElement.classList.toggle('dark', e.target.checked); localStorage.setItem('theme', e.target.checked ? 'dark' : 'light') }} /></label></section>
     {member && <section className="settings-section"><h2>닉네임</h2><form className="inline-form" onChange={nicknameProtection.markDirty} onSubmit={e => save(e, 'nickname')}><input aria-label="닉네임" name="nickname" defaultValue={member.nickname} disabled={busy} required maxLength={10} /><div><button disabled={busy || !canMutate}>저장</button><button type="reset" disabled={busy} onClick={nicknameProtection.clear}>취소</button></div></form></section>}
     {member && <GoogleAccountMethods hasPassword={member.hasPassword !== false} />}
