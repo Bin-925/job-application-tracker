@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    labels:
+      com.jobtracker.purpose: registration-check
+    environment:
+      POSTGRES_USER: registration_check
+      POSTGRES_PASSWORD: ${REGISTRATION_DB_PASSWORD:?Use the isolated registration runner}
+      POSTGRES_DB: registration_check
+    ports:
+      - "127.0.0.1:15587:5432"
+    tmpfs:
+      - /var/lib/postgresql/data:size=536870912
+    mem_limit: 768m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U registration_check -d registration_check"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    labels:
+      com.jobtracker.purpose: registration-check
+    ports:
+      - "127.0.0.1:15588:1025"
+      - "127.0.0.1:15589:8025"
+    mem_limit: 128m
+    cpus: 0.5
