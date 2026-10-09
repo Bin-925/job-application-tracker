@@ -1,10 +1,10 @@
 package com.bin.jobtracker.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -30,7 +30,7 @@ class RegistrationIntegrationTest {
     @LocalServerPort int port;
     @Autowired ObjectMapper json;
     @Autowired JdbcTemplate jdbc;
-    @SpyBean BCryptPasswordEncoder encoder;
+    @MockitoSpyBean BCryptPasswordEncoder encoder;
 
     private class Browser {
         private final HttpClient client = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();

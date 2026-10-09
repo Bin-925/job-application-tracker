@@ -76,6 +76,19 @@ jobs:
           for mode in warm cold-backend cold-vite delayed-api delayed-mail restart-mail; do
             node tests/registration/run.cjs "$mode" 1
           done
+      - name: Checkout the pinned pre-upgrade baseline
+        uses: actions/checkout@v4
+        with:
+          ref: cab180b0aba3fc7c58a25f530eb5722b8e70304b
+          path: .local/upgrade-baseline
+          persist-credentials: false
+      - name: Build the old JAR solely for isolated compatibility checks
+        working-directory: .local/upgrade-baseline/backend
+        run: |
+          chmod +x gradlew
+          ./gradlew bootJar --no-daemon
+      - name: Verify upgrade and rollback without losing application data
+        run: node tests/upgrade/run.cjs "$PWD/.local/upgrade-baseline/backend/build/libs/jobtracker-0.0.1-SNAPSHOT.jar" "$PWD/backend/build/libs/jobtracker-0.0.1-SNAPSHOT.jar"
       - name: Upload sanitized registration diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -86,6 +99,7 @@ jobs:
             .local/registration-results/**/environment.json
             .local/registration-results/**/results.json
             .local/registration-results/**/cleanup.json
+            .local/upgrade-results/**/result.json
           retention-days: 7
 
   frontend:
@@ -145,6 +159,10 @@ jobs:
 
       - name: Run tests
         run: ./gradlew test bootJar --no-daemon
+
+      - name: Audit resolved backend runtime dependencies
+        shell: pwsh
+        run: ../scripts/Audit-Dependencies.ps1 -BackendOnly
 
       - name: Upload test reports
         if: always()

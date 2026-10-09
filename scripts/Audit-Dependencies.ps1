@@ -1,10 +1,12 @@
 # Requires PowerShell 7, JDK 21, pnpm and npm. Sends package coordinates only to advisory services.
+param([switch]$BackendOnly)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $output = Join-Path $root ('.local/security-audit/' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 $null = New-Item -ItemType Directory -Path $output -Force
 $findingCount = 0
-foreach ($scope in @('frontend', '.github')) {
+$nodeScopes = if ($BackendOnly) { @() } else { @('frontend', '.github') }
+foreach ($scope in $nodeScopes) {
     Push-Location (Join-Path $root $scope)
     try {
         $path = Join-Path $output ($scope.TrimStart('.') + '.json')

@@ -4,7 +4,7 @@ import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import java.sql.Connection;
@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.*;
 @Tag("postgres")
 @Testcontainers
 class PostgresMigrationTest {
-    @Container static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
+    @Container static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17-alpine");
 
     private String schema() { return "study_" + UUID.randomUUID().toString().replace("-", ""); }
     private org.flywaydb.core.api.configuration.FluentConfiguration config(String schema) {
