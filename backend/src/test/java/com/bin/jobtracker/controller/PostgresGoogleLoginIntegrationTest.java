@@ -3,7 +3,7 @@ package com.bin.jobtracker.controller;
 import org.junit.jupiter.api.Tag;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.*;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.*;
 
 @Tag("postgres")
@@ -13,7 +13,7 @@ import org.testcontainers.junit.jupiter.*;
         "spring.flyway.locations=classpath:db/migration/postgresql", "spring.jpa.hibernate.ddl-auto=validate",
         "spring.session.jdbc.initialize-schema=never", "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect"})
 class PostgresGoogleLoginIntegrationTest extends GoogleLoginIntegrationTest {
-    @Container static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17-alpine");
+    @Container static final PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:17-alpine");
     @DynamicPropertySource static void database(DynamicPropertyRegistry properties) {
         properties.add("spring.datasource.url", postgres::getJdbcUrl);
         properties.add("spring.datasource.username", postgres::getUsername);

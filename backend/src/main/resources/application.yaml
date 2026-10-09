@@ -1,4 +1,7 @@
 spring:
+  jackson:
+    # Preserve the existing API defaults while using Boot 4's Jackson 3 mapper.
+    use-jackson2-defaults: true
   mail:
     properties:
       "[mail.smtp.connectiontimeout]": 3000

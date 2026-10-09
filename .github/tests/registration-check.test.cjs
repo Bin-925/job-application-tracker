@@ -16,8 +16,26 @@ test('registration CI has bounded execution, no deployment secrets, and JSON-onl
     '.local/registration-results/**/environment.json',
     '.local/registration-results/**/results.json',
     '.local/registration-results/**/cleanup.json',
+    '.local/upgrade-results/**/result.json',
   ]);
   assert.equal(upload.with['retention-days'], 7);
+});
+
+test('upgrade CI pins its old baseline and uses a disposable loopback database', () => {
+  const ci = YAML.parse(fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'));
+  const baseline = ci.jobs.registration.steps.find(step => step.with?.path === '.local/upgrade-baseline');
+  assert.equal(baseline.with.ref, 'cab180b0aba3fc7c58a25f530eb5722b8e70304b');
+  assert.equal(baseline.with['persist-credentials'], false);
+  const compose = YAML.parse(fs.readFileSync(path.join(root, 'tests/upgrade/compose.yaml'), 'utf8'));
+  assert.equal(compose.volumes, undefined);
+  assert.deepEqual(Object.keys(compose.services), ['postgres']);
+  const db = compose.services.postgres;
+  assert.equal(db.volumes, undefined);
+  assert.equal(db.container_name, undefined);
+  assert.deepEqual(db.ports, ['127.0.0.1:15591:5432']);
+  assert.deepEqual(db.tmpfs, ['/var/lib/postgresql/data:size=536870912']);
+  assert.equal(db.labels['com.jobtracker.purpose'], 'upgrade-check');
+  assert.ok(ci.jobs.backend.steps.some(step => step.run === '../scripts/Audit-Dependencies.ps1 -BackendOnly'));
 });
 
 test('registration services are disposable and only expose dedicated loopback ports', () => {

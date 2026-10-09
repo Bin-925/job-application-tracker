@@ -1,7 +1,7 @@
 package com.bin.jobtracker.security;
 
 import com.bin.jobtracker.exception.RateLimitException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;

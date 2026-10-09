@@ -4,7 +4,7 @@
 
 ![CI](https://github.com/Bin-925/job-application-tracker/actions/workflows/ci.yml/badge.svg?branch=dev)
 
-> **2026-10-08 개발 버전 기준입니다.** 핵심 기능·세션 인증·PWA·CI와 메일 가입·비밀번호 재설정, Google OIDC 코드와 모의 제공자 검증을 구현했습니다. Google 실제 클라이언트 연결, 운영 환경 전환, Web Push, 원스토어 출시는 아직 완료하지 않았습니다. Gemini 리뷰 연결은 유지하지만 최근 실행의 API 오류·시간 초과는 리뷰 완료로 보지 않습니다.
+> **2026-10-09 개발 버전 기준입니다.** 핵심 기능·세션 인증·PWA·CI와 메일 가입·비밀번호 재설정, Google OIDC 코드와 모의 제공자 검증을 구현했습니다. Google 실제 클라이언트 연결, 운영 환경 전환, Web Push, 원스토어 출시는 아직 완료하지 않았습니다. Gemini 리뷰 연결은 유지하지만 최근 실행의 API 오류·시간 초과는 리뷰 완료로 보지 않습니다.
 >
 > 배포는 예산 결정 전 보류합니다. Railway 통합을 우선 고려하고 이후 EC2에서 AWS 운영을 직접 학습하려는 방향입니다. 환경 생성·결제·이전 일정은 아직 확정하지 않았습니다.
 
@@ -48,7 +48,7 @@
 
 | 영역 | 사용 기술 | 선택 이유·한계 |
 |---|---|---|
-| 서버 | Java 21, Spring Boot 3.5, Spring Security | 기존 기반 유지, 검증·인증·트랜잭션을 일관되게 처리 |
+| 서버 | Java 21, Spring Boot 4.0.8, Spring Security 7 | 공개 보안 패치가 제공되는 Framework 7 기반으로 전환. 검증·인증·트랜잭션 구조와 API 계약은 유지 |
 | 데이터 | JPA/Hibernate, PostgreSQL, Flyway | 객체와 관계형 데이터 연결, 편집 버전 충돌 처리, SQL 변경 이력 관리 |
 | 세션 | Spring Session JDBC, BCrypt | 기존 DB로 로그인 상태·폐기를 관리. 비밀번호는 해시 저장 |
 | 소셜 인증 | Spring Security OAuth2 Client / OIDC | 코드 교환·ID Token 검증은 검증된 라이브러리에 위임. 인증 후에는 기존 JDBC 세션 사용 |
@@ -123,7 +123,7 @@ React Router blocker로 보호 대상 폼의 메뉴·뒤로 가기·프로그램
 
 테스트 통과나 AI 리뷰의 무지적 결과는 보안 감사·운영 안전 보증이 아닙니다.
 
-2026-10-08 의존성 점검에서 프론트·자동화 도구의 알려진 경고를 수정하고 Jackson/Tomcat/PostgreSQL 드라이버/Log4j API/Commons Lang을 같은 주 버전 내 보안 유지보수 버전으로 올렸습니다. Spring MVC 경고 2건은 현재 사용하지 않는 XSLT 화면·SSE 화면 조각 기능에 관한 것으로 남아 있습니다. 경고를 숨기거나 패치 완료로 처리하지 않으며, [#85 Spring Boot 4 전환 설계](https://github.com/Bin-925/job-application-tracker/issues/85)로 추적합니다. [점검 근거와 한계](docs/SECURITY_ASSURANCE_2026-10-08.md).
+2026-10-09에는 #85의 Spring Boot 4.0.8 전환과 Jackson 3.1.7/Tomcat 11.0.26 보안 패치를 적용했습니다. 프론트·자동화 의존성 감사와 백엔드 런타임 130개 의존성의 OSV 조회에서 알려진 경고 0건을 확인했습니다. 이는 그 시점의 공개 공지 조회 결과이지 취약점 부재 보증이 아닙니다. [전환 이유·검증·세션 정리·롤백 절차](docs/BOOT4_MIGRATION.md)를 확인하세요. [2026-10-08 점검 기록](docs/SECURITY_ASSURANCE_2026-10-08.md)은 이전 버전의 이력입니다.
 
 ### 로그인 유지 정책
 
@@ -227,9 +227,10 @@ cd ..
 | 필수 CI | 검증 내용 |
 |---|---|
 | Frontend and PWA | pnpm audit, lint, Node 테스트 20개, 빌드·PWA 검사, Playwright 64개 |
-| Backend tests and build | H2/단위·통합 테스트 126개와 bootJar. 모의 OIDC HTTP 제공자·GreenMail SMTP 포함 |
+| Backend tests and build | H2/단위·통합 테스트 126개와 bootJar, 런타임 의존성 OSV 검사. 모의 OIDC HTTP 제공자·GreenMail SMTP 포함 |
 | PostgreSQL migrations and sessions | Testcontainers 테스트 76개: 이전·복원, 세션·아바타 소유권, 메일 인증·비밀번호 복구, Google 인증 15개, 지원·일정·동시 가입. 실제 백업/격리 복원 스크립트 검증 |
-| Workflow tests | npm audit, Gemini 모의 검증 14개 + 영구 DB 구성 2개 + 부하 설정 안전 검사 3개 |
+| Workflow tests | npm audit, Gemini·DB·가입/전환 CI 계약 검사, 부하 설정과 가입 검사 안전 장치 |
+| Registration cold-start checks | 실제 API·PostgreSQL·SMTP·브라우저 가입 6개 조건. 고정된 Boot 3 기준 JAR에서 Boot 4 전환과 롤백 시 데이터·JSON·Flyway 이력 유지 검사 |
 | Windows backup permissions | 백업 파일·폴더의 상속 차단, 현재 사용자/SYSTEM 접근 제한, 소유자 보존, 반복 적용 검증 |
 
 숫자는 이 README 기준 개발 버전의 검증 범위입니다. 브라우저 테스트의 API fixture는 실제 백엔드 검증을 대신하지 않습니다. 원래 익명인 가입 화면의 세션 확인 401은 입력 보호를 해제하지 않으며, 실제 회원 세션 상실은 입력·초안을 정리하는 회귀도 포함합니다.

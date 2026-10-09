@@ -9,7 +9,7 @@ import com.bin.jobtracker.service.MemberService;
 import com.bin.jobtracker.security.AuthRateLimiter;
 import com.bin.jobtracker.security.AuthRateLimitProperties;
 import com.bin.jobtracker.security.ApiRequestGuardFilter;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
