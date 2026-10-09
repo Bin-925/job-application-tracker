@@ -19,6 +19,7 @@ repositories {
 	mavenCentral()
 }
 dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
@@ -47,6 +48,20 @@ dependencies {
 	testImplementation 'com.icegreen:greenmail:2.1.14'
 	// Swagger
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3'
+}
+
+// Development/API-only builds stay independent of Node. Release builds opt in.
+if (providers.gradleProperty('frontendDist').isPresent()) {
+    def frontendDist = file(providers.gradleProperty('frontendDist').get())
+    tasks.named('processResources') {
+        inputs.dir(frontendDist)
+        doFirst {
+            if (!new File(frontendDist, 'index.html').isFile()) {
+                throw new GradleException('Build frontend/dist before providing -PfrontendDist')
+            }
+        }
+        from(frontendDist) { into 'static' }
+    }
 }
 tasks.named('test') {
 	useJUnitPlatform { excludeTags 'postgres' }

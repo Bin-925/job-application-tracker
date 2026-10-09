@@ -1,0 +1,22 @@
+# Activate together with postgres; credentials are supplied at runtime only.
+server:
+  port: ${PORT:8080}
+  address: 0.0.0.0
+  forward-headers-strategy: none
+  shutdown: graceful
+spring:
+  config:
+    import: ""
+  jpa:
+    open-in-view: false
+    show-sql: false
+app:
+  session:
+    secure: true
+  cors:
+    allowed-origins: ${APP_PUBLIC_ORIGIN}
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
