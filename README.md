@@ -66,6 +66,8 @@
 
 ## 구조와 데이터 흐름
 
+동일 출처 배포를 위한 프론트 포함 JAR·비루트 Dockerfile·제한된 SPA 경로·정적 캐시·`/livez`/`/readyz`를 구현했습니다. 실제 HTTPS 운영 환경은 아직 생성하지 않았습니다. [빌드 방법과 검증 범위](docs/SAME_ORIGIN_RELEASE.md).
+
 ```mermaid
 flowchart LR
     U[웹 또는 설치형 PWA] --> F[React 화면]

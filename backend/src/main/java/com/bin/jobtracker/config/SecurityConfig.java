@@ -96,6 +96,8 @@ public class SecurityConfig {
                 .headers(headers -> headers.cacheControl(cache -> cache.disable())
                         .addHeaderWriter(new StaticHeadersWriter("Cache-Control", "private, no-store")))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
+                        .requestMatchers("/actuator", "/actuator/**").denyAll()
                         .requestMatchers("/api/v1/oauth/**").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/members/recovery-email/confirm").permitAll()
                         .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/members/password-reset/options").permitAll()

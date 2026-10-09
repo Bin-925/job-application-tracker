@@ -1,0 +1,15 @@
+**/.git
+**/node_modules
+**/build
+**/dist
+**/.gradle
+**/.local
+**/.env*
+**/application-secret.*
+**/test-results
+**/playwright-report
+**/*.dump
+**/*.jks
+**/*.keystore
+.idea
+.vercel

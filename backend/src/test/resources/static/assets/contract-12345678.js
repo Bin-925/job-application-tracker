@@ -1,0 +1,1 @@
+// Static cache contract fixture.

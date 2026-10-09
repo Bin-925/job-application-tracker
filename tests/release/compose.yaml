@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    labels:
+      com.jobtracker.purpose: release-check
+    environment:
+      POSTGRES_USER: release_check
+      POSTGRES_PASSWORD: ${RELEASE_DB_PASSWORD:?Use the isolated release runner}
+      POSTGRES_DB: release_check
+    ports: ["127.0.0.1:15593:5432"]
+    tmpfs: ["/var/lib/postgresql/data:size=536870912"]
+    mem_limit: 768m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U release_check -d release_check"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

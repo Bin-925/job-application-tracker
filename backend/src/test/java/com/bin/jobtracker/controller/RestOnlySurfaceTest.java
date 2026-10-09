@@ -15,7 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 class RestOnlySurfaceTest {
     @Autowired ApplicationContext context;
-    @Autowired RequestMappingHandlerMapping mappings;
+    @Autowired @org.springframework.beans.factory.annotation.Qualifier("requestMappingHandlerMapping")
+    RequestMappingHandlerMapping mappings;
 
     @Test void applicationControllersDoNotEnableXsltOrServerRenderedSseFragments() {
         // These prerequisites must be reassessed before enabling the affected view features.

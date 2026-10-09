@@ -68,9 +68,16 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm --dir frontend install --frozen-lockfile
       - run: pnpm --dir frontend exec playwright install --with-deps chromium
+      - uses: grafana/setup-k6-action@v1
+        with:
+          k6-version: '2.2.0'
+      - run: pnpm --dir frontend build
+      - run: pnpm --dir frontend check:pwa
       - run: chmod +x backend/gradlew
-      - run: ./gradlew bootJar --no-daemon
+      - run: ./gradlew bootJar -PfrontendDist=../frontend/dist --no-daemon
         working-directory: backend
+      - name: Verify packaged routes, cache, probes, DB recovery and release k6
+        run: node tests/release/run.cjs
       - name: Exercise isolated real signup and recovery from startup failures
         run: |
           for mode in warm cold-backend cold-vite delayed-api delayed-mail restart-mail; do
@@ -100,6 +107,8 @@ jobs:
             .local/registration-results/**/results.json
             .local/registration-results/**/cleanup.json
             .local/upgrade-results/**/result.json
+            .local/release-results/**/result.json
+            .local/release-results/**/k6.json
           retention-days: 7
 
   frontend:

@@ -1,3 +1,21 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+      probes:
+        enabled: true
+        add-additional-paths: true
+      group:
+        readiness:
+          include: readinessState,db
+  health:
+    mail:
+      enabled: false
 spring:
   jackson:
     # Preserve the existing API defaults while using Boot 4's Jackson 3 mapper.

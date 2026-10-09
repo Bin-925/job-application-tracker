@@ -20,7 +20,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [/^\/api(?:\/|$)/, /^\/\.well-known(?:\/|$)/, /^\/(?:livez|readyz|actuator)(?:\/|$)/, /\.[^/]+$/],
         // Personal data is never stored in the service-worker cache.
         runtimeCaching: [{ urlPattern: ({ url }) => url.pathname.startsWith('/api/'), handler: 'NetworkOnly' }],
       },

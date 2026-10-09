@@ -17,8 +17,30 @@ test('registration CI has bounded execution, no deployment secrets, and JSON-onl
     '.local/registration-results/**/results.json',
     '.local/registration-results/**/cleanup.json',
     '.local/upgrade-results/**/result.json',
+    '.local/release-results/**/result.json',
+    '.local/release-results/**/k6.json',
   ]);
   assert.equal(upload.with['retention-days'], 7);
+});
+
+test('release build retains lock policy, runtime isolation and mandatory k6', () => {
+  const dockerfile = fs.readFileSync(path.join(root, 'Dockerfile'), 'utf8');
+  assert.match(dockerfile, /COPY frontend\/package.json frontend\/pnpm-lock.yaml frontend\/pnpm-workspace.yaml/);
+  assert.match(dockerfile, /pnpm install --frozen-lockfile/);
+  assert.match(dockerfile, /USER 10001:10001/);
+  const ignore = fs.readFileSync(path.join(root, '.dockerignore'), 'utf8');
+  for (const pattern of ['**/.env*', '**/application-secret.*', '**/.git', '**/node_modules']) assert.ok(ignore.includes(pattern));
+  const compose = YAML.parse(fs.readFileSync(path.join(root, 'tests/release/compose.yaml'), 'utf8'));
+  assert.equal(compose.volumes, undefined);
+  assert.equal(compose.services.postgres.volumes, undefined);
+  assert.equal(compose.services.postgres.container_name, undefined);
+  assert.deepEqual(compose.services.postgres.ports, ['127.0.0.1:15593:5432']);
+  assert.deepEqual(compose.services.postgres.tmpfs, ['/var/lib/postgresql/data:size=536870912']);
+  const ci = YAML.parse(fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8'));
+  assert.ok(ci.jobs.registration.steps.some(step => step.run === 'node tests/release/run.cjs'));
+  const load = fs.readFileSync(path.join(root, 'tests/release/load.js'), 'utf8');
+  assert.match(load, /__ENV.BASE_URL !== 'http:\/\/127.0.0.1:18593'/);
+  assert.match(load, /rate==1/);
 });
 
 test('upgrade CI pins its old baseline and uses a disposable loopback database', () => {
